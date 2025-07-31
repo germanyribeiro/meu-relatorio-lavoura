@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react'; // Importado useMemo
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
@@ -16,9 +16,10 @@ import PropTypes from 'prop-types';
 
 const App = () => {
   // Configurações e IDs globais do ambiente Canvas
-  // Declarando fora dos useEffects para evitar warnings de 'no-unused-vars' e garantir inicialização única
   const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
-  const firebaseConfig = {
+  
+  // Usando useMemo para memorizar firebaseConfig e evitar o aviso do ESLint
+  const firebaseConfig = useMemo(() => ({
     apiKey: "AIzaSyBwlHn7CommvM6psGiXjwN3AWYemiJ9uj4",
     authDomain: "lavourasapp.firebaseapp.com",
     projectId: "lavourasapp",
@@ -26,7 +27,7 @@ const App = () => {
     messagingSenderId: "576349607032",
     appId: "1:576349607032:web:3a36527be7aaf7ee2ec98d",
     measurementId: "G-W5CJR02XDX"
-  };
+  }), []); // Array de dependências vazio para garantir que seja criado apenas uma vez
 
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
@@ -49,7 +50,10 @@ const App = () => {
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
     try {
-      const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : '';
+      // initialAuthToken é específico do ambiente Canvas e não deve ser usado em deploy direto.
+      // A remoção da tentativa de signInWithCustomToken aqui evita o erro 'auth/custom-token-mismatch'
+      // quando a aplicação é acessada fora do Canvas.
+      // const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : '';
 
       if (!Object.keys(firebaseConfig).length) {
         throw new Error("A configuração do Firebase está faltando. Por favor, certifique-se de que __firebase_config foi fornecido.");
@@ -64,24 +68,18 @@ const App = () => {
 
       const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
         if (user) {
+          // Se um usuário está logado (seja por email/senha ou token inicial válido), define o userId.
           setUserId(user.uid);
           setIsAuthReady(true);
           setLoading(false);
           setAuthMessage(''); // Limpa mensagens de autenticação ao logar
         } else {
-          // Se não houver usuário logado, tenta o login com token inicial (se houver)
-          try {
-            if (initialAuthToken) {
-              await signInWithCustomToken(firebaseAuth, initialAuthToken);
-            }
-            // Se não houver initialAuthToken ou se falhar, userId permanecerá null,
-            // e a tela de login/cadastro será exibida.
-          } catch (signInError) {
-            console.error("Erro ao autenticar com token inicial:", signInError);
-            setUserId(null); // Garante que userId seja nulo para exibir a tela de login
-            setIsAuthReady(true); // Indica que a checagem de auth terminou
-            setLoading(false);
-          }
+          // Se não há usuário logado, garante que a tela de login/cadastro seja exibida.
+          // Não tentamos mais signInWithCustomToken aqui para evitar o erro 'auth/custom-token-mismatch'
+          // em ambientes onde o token inicial não é fornecido ou é inválido.
+          setUserId(null); // Define userId como nulo para mostrar a tela de login
+          setIsAuthReady(true); // Indica que a checagem de autenticação terminou
+          setLoading(false);
         }
       });
 
@@ -92,7 +90,7 @@ const App = () => {
       setError(`Erro na inicialização do Firebase: ${err.message}`);
       setLoading(false);
     }
-  }, [firebaseConfig]); // firebaseConfig adicionado de volta às dependências
+  }, [firebaseConfig]); // firebaseConfig agora está memorizado, então esta dependência é estável
 
   // Busca relatórios quando a autenticação está pronta e o db está disponível
   useEffect(() => {
