@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'; // Adicionados createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut } from 'lucide-react'; // Adicionados LogIn, UserPlus, LogOut
 
 // As bibliotecas jsPDF e html2canvas serão carregadas via CDN no index.html.
 // Removendo os imports diretos para evitar erros de "Could not resolve" no ambiente de compilação.
@@ -16,7 +16,7 @@ import PropTypes from 'prop-types';
 
 const App = () => {
   const [db, setDb] = useState(null);
-  const [auth, setAuth] = useState(null); // eslint-disable-line no-unused-vars
+  const [auth, setAuth] = useState(null);
   const [userId, setUserId] = useState(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [view, setView] = useState('list'); // 'list', 'create', 'edit', 'view'
@@ -27,14 +27,16 @@ const App = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false); // Estado para controlar a visibilidade do modal de fotos
   const [selectedPhoto, setSelectedPhoto] = useState(''); // Estado para a foto selecionada no modal
 
+  // Estados para autenticação
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
+  const [isLoginView, setIsLoginView] = useState(true); // true para login, false para cadastro
+
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
     try {
-      // Declarando __app_id e __initial_auth_token para que o ESLint os reconheça
-      // Eles são injetados globalmente pelo ambiente Canvas, mas esta declaração
-      // garante que o linter não reclame de "não definidos".
-      // Usando 'window.' para acessar variáveis globais de forma explícita.
-      const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id'; // eslint-disable-line no-unused-vars
+      const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
       const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : '';
       const firebaseConfig = {
         apiKey: "AIzaSyBwlHn7CommvM6psGiXjwN3AWYemiJ9uj4",
@@ -61,24 +63,24 @@ const App = () => {
         if (user) {
           setUserId(user.uid);
           setIsAuthReady(true);
+          setLoading(false);
+          setAuthMessage(''); // Limpa mensagens de autenticação ao logar
         } else {
+          // Se não houver usuário logado, tenta o login anônimo ou com token inicial
           try {
-            // Tenta fazer login com o token personalizado se disponível
             if (initialAuthToken) {
               await signInWithCustomToken(firebaseAuth, initialAuthToken);
             } else {
-              // Volta para o login anônimo se não houver token personalizado
               await signInAnonymously(firebaseAuth);
             }
           } catch (signInError) {
             console.error("Erro ao autenticar no Firebase:", signInError);
-            setError("Erro ao autenticar no Firebase. Por favor, tente novamente.");
-            // Gera um UUID aleatório para userId se a autenticação falhar
-            setUserId(crypto.randomUUID());
-            setIsAuthReady(true); // Ainda define como true para permitir que o aplicativo prossiga
+            // Se o login anônimo ou com token falhar, o usuário precisará fazer login manualmente
+            setUserId(null); // Garante que userId seja nulo para exibir a tela de login
+            setIsAuthReady(true); // Indica que a checagem de auth terminou
+            setLoading(false);
           }
         }
-        setLoading(false);
       });
 
       return () => unsubscribe();
@@ -93,23 +95,19 @@ const App = () => {
   // Busca relatórios quando a autenticação está pronta e o db está disponível
   useEffect(() => {
     if (db && userId && isAuthReady) {
-      // Redefine para uso aqui, usando window para consistência com a declaração acima
       const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
       const reportsCollectionRef = collection(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`);
-      // Nota: orderBy está comentado para evitar possíveis problemas de índice conforme as instruções.
-      // const q = query(reportsCollectionRef, orderBy('createdAt', 'desc'));
-      const q = query(reportsCollectionRef); // Busca tudo e ordena em memória
+      const q = query(reportsCollectionRef);
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const fetchedReports = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        // Ordena em memória por createdAt se disponível, caso contrário por dataVisita
         fetchedReports.sort((a, b) => {
           const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.dataVisita);
           const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.dataVisita);
-          return dateB - dateA; // Ordem decrescente
+          return dateB - dateA;
         });
         setReports(fetchedReports);
         setLoading(false);
@@ -122,6 +120,56 @@ const App = () => {
       return () => unsubscribe();
     }
   }, [db, userId, isAuthReady]);
+
+  // Funções de autenticação
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthMessage('');
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      setAuthMessage("Cadastro realizado com sucesso! Você está logado.");
+      setEmail('');
+      setPassword('');
+    } catch (error) {
+      console.error("Erro no cadastro:", error);
+      setAuthMessage(`Erro ao cadastrar: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthMessage('');
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setAuthMessage("Login realizado com sucesso!");
+      setEmail('');
+      setPassword('');
+    } catch (error) {
+      console.error("Erro no login:", error);
+      setAuthMessage(`Erro ao fazer login: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      await signOut(auth);
+      setAuthMessage("Você foi desconectado.");
+      setUserId(null); // Limpa o userId para mostrar a tela de login
+      setView('list'); // Volta para a lista ao deslogar
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      setAuthMessage(`Erro ao fazer logout: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateNewReport = () => {
     setCurrentReport(null);
@@ -140,9 +188,8 @@ const App = () => {
 
   const handleDeleteReport = async (reportId) => {
     if (!db || !userId) return;
-    // Define currentAppId para uso aqui
     const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
-    if (window.confirm("Tem certeza que deseja excluir este relatório?")) { // Usando window.confirm para simplificar, mas em um aplicativo real, use um modal personalizado.
+    if (window.confirm("Tem certeza que deseja excluir este relatório?")) {
       try {
         await deleteDoc(doc(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`, reportId));
         console.log("Relatório excluído com sucesso!");
@@ -156,11 +203,9 @@ const App = () => {
   const handleSaveReport = async (reportData) => {
     if (!db || !userId) return;
     setLoading(true);
-    // Define currentAppId para uso aqui
     const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
     try {
       if (reportData.id) {
-        // Atualiza relatório existente
         const { id, ...dataToUpdate } = reportData;
         await updateDoc(doc(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`, id), {
           ...dataToUpdate,
@@ -168,7 +213,6 @@ const App = () => {
         });
         console.log("Relatório atualizado com sucesso!");
       } else {
-        // Adiciona novo relatório
         await addDoc(collection(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`), {
           ...reportData,
           createdAt: serverTimestamp(),
@@ -186,45 +230,39 @@ const App = () => {
     }
   };
 
-  // Função para gerar o PDF (agora no App para ser reutilizável)
   const generatePdfFromReportData = async (reportData, contentRef) => {
     if (!contentRef.current) {
       console.error("Conteúdo do relatório não encontrado para gerar PDF.");
       return;
     }
 
-    // Verifica se as bibliotecas estão disponíveis globalmente
     if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
       console.error("Bibliotecas jsPDF ou html2canvas não carregadas. Certifique-se de que as tags <script> estão no index.html.");
       alert("Erro: As bibliotecas de PDF não foram carregadas. Por favor, recarregue a página e verifique a conexão.");
       return;
     }
 
-    // Cria um div temporário para renderizar o conteúdo e evitar conflitos com o DOM do React
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px'; // Move para fora da tela
-    tempDiv.style.width = contentRef.current.offsetWidth + 'px'; // Mantém a largura do elemento original
-    tempDiv.style.height = contentRef.current.offsetHeight + 'px'; // Mantém a altura do elemento original
-    tempDiv.style.overflow = 'hidden'; // Esconde o conteúdo extra
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.width = contentRef.current.offsetWidth + 'px';
+    tempDiv.style.height = contentRef.current.offsetHeight + 'px';
+    tempDiv.style.overflow = 'hidden';
 
-    // Clona o conteúdo do relatório para o div temporário
     const clonedContent = contentRef.current.cloneNode(true);
     tempDiv.appendChild(clonedContent);
     document.body.appendChild(tempDiv);
 
     try {
-      // Usando html2canvas da biblioteca global
       const canvas = await window.html2canvas(clonedContent, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
 
-      // Usando jsPDF da biblioteca global
       const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const pageHeight = 297;
       const imgHeight = canvas.height * imgWidth / canvas.width;
       let heightLeft = imgHeight;
-      let position = 0; // Inicializa a posição
+      let position = 0;
 
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
@@ -240,22 +278,19 @@ const App = () => {
       pdf.save(filename);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      alert("Erro ao gerar PDF. Por favor, tente novamente."); // Usando alert para simplificar, mas em aplicativo real use modal personalizado
+      alert("Erro ao gerar PDF. Por favor, tente novamente.");
     } finally {
-      // Remove o div temporário do DOM
       if (document.body.contains(tempDiv)) {
         document.body.removeChild(tempDiv);
       }
     }
   };
 
-  // Função para abrir o modal de foto
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
     setShowPhotoModal(true);
   };
 
-  // Função para fechar o modal de foto
   const closePhotoModal = () => {
     setShowPhotoModal(false);
     setSelectedPhoto('');
@@ -282,20 +317,95 @@ const App = () => {
     );
   }
 
+  // Se não estiver autenticado, mostra a tela de login/cadastro
+  if (!userId && isAuthReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-2xl shadow-lg border-4 border-green-300 w-full max-w-md text-center">
+          <h1 className="text-3xl font-extrabold text-green-700 mb-6">
+            🌱 Relatórios de Lavouras
+          </h1>
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            {isLoginView ? 'Entrar' : 'Cadastre-se'}
+          </h2>
+          <form onSubmit={isLoginView ? handleLogin : handleRegister} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="sr-only">E-mail</label>
+              <input
+                type="email"
+                id="email"
+                placeholder="Seu e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">Senha</label>
+              <input
+                type="password"
+                id="password"
+                placeholder="Sua senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
+              />
+            </div>
+            {authMessage && (
+              <p className={`text-sm ${authMessage.includes('Erro') ? 'text-red-600' : 'text-green-600'} mt-2`}>
+                {authMessage}
+              </p>
+            )}
+            <button
+              type="submit"
+              className="flex items-center justify-center w-full px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : (
+                isLoginView ? <LogIn className="w-5 h-5 mr-2" /> : <UserPlus className="w-5 h-5 mr-2" />
+              )}
+              {isLoginView ? 'Entrar' : 'Cadastrar'}
+            </button>
+          </form>
+          <button
+            onClick={() => setIsLoginView(!isLoginView)}
+            className="mt-4 text-blue-600 hover:underline text-sm"
+          >
+            {isLoginView ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entrar'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Se autenticado, mostra o aplicativo principal
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 sm:p-6 lg:p-8">
-      <header className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg mb-6 flex flex-col items-center text-center">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-green-700 mb-2">
+      <header className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg mb-6 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-green-700 mb-2 sm:mb-0">
           🌱 Relatórios de Lavouras
         </h1>
-        <span className="text-sm text-gray-600 mb-4">ID do Usuário: <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded-md">{userId}</span></span>
-        <button
-          onClick={handleCreateNewReport}
-          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-xl shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105 mt-6"
-        >
-          <PlusCircle className="w-5 h-5 mr-2" />
-          Novo Relatório
-        </button>
+        <div className="flex flex-col items-center sm:items-end">
+          <span className="text-sm text-gray-600 mb-2">ID do Usuário: <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded-md break-all">{userId}</span></span>
+          <div className="flex space-x-4">
+            <button
+              onClick={handleCreateNewReport}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-xl shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
+            >
+              <PlusCircle className="w-5 h-5 mr-2" />
+              Novo Relatório
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-xl shadow-md hover:bg-red-700 transition duration-300 ease-in-out transform hover:scale-105"
+            >
+              <LogOut className="w-5 h-5 mr-2" />
+              Sair
+            </button>
+          </div>
+        </div>
       </header>
 
       <main className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border-4 border-green-300">
@@ -315,7 +425,7 @@ const App = () => {
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             isEditing={view === 'edit'}
             onGeneratePdf={generatePdfFromReportData}
-            openPhotoModal={openPhotoModal} // Passa a função para o formulário
+            openPhotoModal={openPhotoModal}
           />
         )}
         {view === 'view' && currentReport && (
@@ -323,7 +433,7 @@ const App = () => {
             report={currentReport}
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
-            openPhotoModal={openPhotoModal} // Passa a função para a visualização
+            openPhotoModal={openPhotoModal}
           />
         )}
       </main>
