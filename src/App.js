@@ -24,6 +24,8 @@ const App = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false); // Estado para controlar a visibilidade do modal de fotos
+  const [selectedPhoto, setSelectedPhoto] = useState(''); // Estado para a foto selecionada no modal
 
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
@@ -247,6 +249,18 @@ const App = () => {
     }
   };
 
+  // Função para abrir o modal de foto
+  const openPhotoModal = (photoUrl) => {
+    setSelectedPhoto(photoUrl);
+    setShowPhotoModal(true);
+  };
+
+  // Função para fechar o modal de foto
+  const closePhotoModal = () => {
+    setShowPhotoModal(false);
+    setSelectedPhoto('');
+  };
+
 
   if (loading) {
     return (
@@ -301,6 +315,7 @@ const App = () => {
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             isEditing={view === 'edit'}
             onGeneratePdf={generatePdfFromReportData}
+            openPhotoModal={openPhotoModal} // Passa a função para o formulário
           />
         )}
         {view === 'view' && currentReport && (
@@ -308,9 +323,15 @@ const App = () => {
             report={currentReport}
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
+            openPhotoModal={openPhotoModal} // Passa a função para a visualização
           />
         )}
       </main>
+
+      {/* Modal de visualização de foto */}
+      {showPhotoModal && (
+        <PhotoModal imageUrl={selectedPhoto} onClose={closePhotoModal} />
+      )}
     </div>
   );
 };
@@ -385,7 +406,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal }) => {
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -606,7 +627,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
                     className="w-full h-full object-cover cursor-pointer" // Adicionado cursor-pointer
-                    onClick={() => window.open(photoUrl, '_blank')} // Abre a foto em nova aba
+                    onClick={() => openPhotoModal(photoUrl)} // Abre a foto no modal
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
@@ -626,13 +647,13 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
           </div>
         </div> {/* Fim do div com ref */}
 
-        <div className="flex justify-end space-x-4 mt-8">
+        <div className="flex flex-wrap justify-center md:justify-end gap-4 mt-8">
           <button
             type="button"
             onClick={onCancel}
-            className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition duration-300 ease-in-out"
+            className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition duration-300 ease-in-out text-sm sm:text-base text-center"
           >
-            <XCircle className="w-5 h-5 mr-2" />
+            <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" /> {/* Ajuste de margem para ícone */}
             Cancelar
           </button>
           <button
@@ -664,9 +685,10 @@ ReportForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
+  openPhotoModal: PropTypes.func.isRequired, // Adicionado PropTypes para openPhotoModal
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf }) => { // Removido onAddPhoto
+const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal }) => { // Adicionado openPhotoModal
   const reportContentRef = useRef(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
@@ -748,7 +770,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf }) => { // Removido onAddP
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
                     className="w-full h-full object-cover cursor-pointer" // Adicionado cursor-pointer
-                    onClick={() => window.open(photoUrl, '_blank')} // Abre a foto em nova aba
+                    onClick={() => openPhotoModal(photoUrl)} // Abre a foto no modal
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
@@ -761,12 +783,12 @@ const ReportView = ({ report, onCancel, onGeneratePdf }) => { // Removido onAddP
         )}
       </div>
 
-      <div className="flex justify-end space-x-4">
+      <div className="flex flex-wrap justify-center md:justify-end gap-4">
         <button
           onClick={onCancel}
-          className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition duration-300 ease-in-out"
+          className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition duration-300 ease-in-out text-sm sm:text-base text-center"
         >
-          <XCircle className="w-5 h-5 mr-2" />
+          <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" /> {/* Ajuste de margem para ícone */}
           Voltar para a Lista
         </button>
         <button
@@ -788,7 +810,51 @@ ReportView.propTypes = {
   report: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
-  // onAddPhoto: PropTypes.func.isRequired, // Removido PropTypes para onAddPhoto
+  openPhotoModal: PropTypes.func.isRequired, // Adicionado PropTypes para openPhotoModal
 };
+
+// Novo componente de Modal para exibir a foto em tela cheia
+const PhotoModal = ({ imageUrl, onClose }) => {
+  useEffect(() => {
+    // Desabilita a rolagem do corpo quando o modal está aberto
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset'; // Reabilita a rolagem ao fechar
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+      onClick={onClose} // Fecha o modal ao clicar fora da imagem
+    >
+      <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}> {/* Impede que o clique na imagem feche o modal */}
+        <img
+          src={imageUrl}
+          alt="Visualização da Foto"
+          className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-xl"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = `https://placehold.co/600x400/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
+          }}
+        />
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white bg-gray-800 bg-opacity-50 rounded-full p-2 hover:bg-gray-700 transition-colors duration-200"
+          aria-label="Fechar"
+        >
+          <XCircle className="w-8 h-8" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Adicionando PropTypes para PhotoModal
+PhotoModal.propTypes = {
+  imageUrl: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
 
 export default App;
