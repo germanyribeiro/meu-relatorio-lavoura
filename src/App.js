@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'; // Removido signInAnonymously
+import { getAuth, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
@@ -92,7 +92,7 @@ const App = () => {
       setError(`Erro na inicialização do Firebase: ${err.message}`);
       setLoading(false);
     }
-  }, []); // Removido firebaseConfig das dependências, pois é uma constante global
+  }, [firebaseConfig]); // firebaseConfig adicionado de volta às dependências
 
   // Busca relatórios quando a autenticação está pronta e o db está disponível
   useEffect(() => {
@@ -120,7 +120,7 @@ const App = () => {
 
       return () => unsubscribe();
     }
-  }, [db, userId, isAuthReady, currentAppId]); // Adicionado currentAppId como dependência
+  }, [db, userId, isAuthReady, currentAppId]);
 
   // Funções de autenticação
   const handleRegister = async (e) => {
@@ -919,7 +919,7 @@ ReportView.propTypes = {
   report: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
-  openPhotoModal: PropTypes.func.isRequired, // Adicionado PropTypes para openPhotoModal
+  openPhotoModal: PropTypes.func.isRequired,
 };
 
 // Novo componente de Modal para exibir a foto em tela cheia
