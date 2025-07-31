@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'; // Removido signInAnonymously
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
@@ -69,17 +69,15 @@ const App = () => {
           setLoading(false);
           setAuthMessage(''); // Limpa mensagens de autenticação ao logar
         } else {
-          // Se não houver usuário logado, tenta o login anônimo ou com token inicial
+          // Se não houver usuário logado, tenta o login com token inicial (se houver)
           try {
             if (initialAuthToken) {
               await signInWithCustomToken(firebaseAuth, initialAuthToken);
-            } else {
-              // Não tenta signInAnonymously aqui se a intenção é forçar login com email/senha
-              // A tela de login/cadastro será exibida se userId for null
             }
+            // Se não houver initialAuthToken ou se falhar, userId permanecerá null,
+            // e a tela de login/cadastro será exibida.
           } catch (signInError) {
-            console.error("Erro ao autenticar no Firebase:", signInError);
-            // Se o login anônimo ou com token falhar, o usuário precisará fazer login manualmente
+            console.error("Erro ao autenticar com token inicial:", signInError);
             setUserId(null); // Garante que userId seja nulo para exibir a tela de login
             setIsAuthReady(true); // Indica que a checagem de auth terminou
             setLoading(false);
@@ -94,7 +92,7 @@ const App = () => {
       setError(`Erro na inicialização do Firebase: ${err.message}`);
       setLoading(false);
     }
-  }, [firebaseConfig]); // Adiciona firebaseConfig como dependência para garantir que seja inicializado corretamente
+  }, []); // Removido firebaseConfig das dependências, pois é uma constante global
 
   // Busca relatórios quando a autenticação está pronta e o db está disponível
   useEffect(() => {
@@ -122,7 +120,7 @@ const App = () => {
 
       return () => unsubscribe();
     }
-  }, [db, userId, isAuthReady, currentAppId]); // Adiciona currentAppId como dependência
+  }, [db, userId, isAuthReady, currentAppId]); // Adicionado currentAppId como dependência
 
   // Funções de autenticação
   const handleRegister = async (e) => {
