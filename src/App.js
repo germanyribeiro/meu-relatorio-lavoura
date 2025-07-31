@@ -240,55 +240,60 @@ const App = () => {
       return;
     }
 
+    setLoadingPdf(true);
     setIsPdfMode(true); // Define o modo PDF como true antes de gerar o PDF
     
-    const screenWidth = window.innerWidth;
-    // Ajusta a escala para html2canvas: menor para dispositivos móveis, maior para desktop
-    const scale = screenWidth < 768 ? 1.5 : 2; 
+    // Usa requestAnimationFrame para garantir que o DOM seja atualizado antes da captura
+    requestAnimationFrame(async () => {
+      const screenWidth = window.innerWidth;
+      // Ajusta a escala para html2canvas: menor para dispositivos móveis, maior para desktop
+      const scale = screenWidth < 768 ? 1.5 : 2; 
 
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.width = contentRef.current.offsetWidth + 'px'; // Mantém a largura do elemento original
-    tempDiv.style.height = contentRef.current.offsetHeight + 'px'; // Mantém a altura do elemento original
-    tempDiv.style.overflow = 'hidden';
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.width = contentRef.current.offsetWidth + 'px'; // Mantém a largura do elemento original
+      tempDiv.style.height = contentRef.current.offsetHeight + 'px'; // Mantém a altura do elemento original
+      tempDiv.style.overflow = 'hidden';
 
-    const clonedContent = contentRef.current.cloneNode(true);
-    tempDiv.appendChild(clonedContent);
-    document.body.appendChild(tempDiv);
+      const clonedContent = contentRef.current.cloneNode(true);
+      tempDiv.appendChild(clonedContent);
+      document.body.appendChild(tempDiv);
 
-    try {
-      const canvas = await window.html2canvas(clonedContent, { scale: scale }); // Usa a escala dinâmica
-      const imgData = canvas.toDataURL('image/png');
+      try {
+        const canvas = await window.html2canvas(clonedContent, { scale: scale }); // Usa a escala dinâmica
+        const imgData = canvas.toDataURL('image/png');
 
-      const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = canvas.height * imgWidth / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+        const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
-      }
 
-      const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
-      pdf.save(filename);
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-      alert("Erro ao gerar PDF. Por favor, tente novamente.");
-    } finally {
-      if (document.body.contains(tempDiv)) {
-        document.body.removeChild(tempDiv);
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
+        pdf.save(filename);
+      } catch (error) {
+        console.error("Erro ao gerar PDF:", error);
+        alert("Erro ao gerar PDF. Por favor, tente novamente.");
+      } finally {
+        if (document.body.contains(tempDiv)) {
+          document.body.removeChild(tempDiv);
+        }
+        setIsPdfMode(false); // Define o modo PDF como false após a geração
+        setLoadingPdf(false); // Garante que o estado de loading seja resetado
       }
-      setIsPdfMode(false); // Define o modo PDF como false após a geração
-    }
+    }); // Fim do requestAnimationFrame
   };
 
   const openPhotoModal = (photoUrl) => {
