@@ -651,7 +651,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
           <button
             type="button"
             onClick={onCancel}
-            className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition duration-300 ease-in-out text-sm sm:text-base text-center"
+            className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition duration-300 ease-in-out text-sm sm:text-base text-center"
           >
             <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" /> {/* Ajuste de margem para ícone */}
             Cancelar
@@ -786,7 +786,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal }) => { //
       <div className="flex flex-wrap justify-center md:justify-end gap-4">
         <button
           onClick={onCancel}
-          className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 border border-gray-300 text-gray-700 rounded-lg shadow-sm hover:bg-gray-100 transition duration-300 ease-in-out text-sm sm:text-base text-center"
+          className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition duration-300 ease-in-out text-sm sm:text-base text-center"
         >
           <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" /> {/* Ajuste de margem para ícone */}
           Voltar para a Lista
