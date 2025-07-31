@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'; // Adicionados createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
+import { getAuth, signInAnonymously, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut } from 'lucide-react'; // Adicionados LogIn, UserPlus, LogOut
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut } from 'lucide-react';
 
 // As bibliotecas jsPDF e html2canvas serão carregadas via CDN no index.html.
 // Removendo os imports diretos para evitar erros de "Could not resolve" no ambiente de compilação.
@@ -15,6 +15,19 @@ import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader
 import PropTypes from 'prop-types';
 
 const App = () => {
+  // Configurações e IDs globais do ambiente Canvas
+  // Declarando fora dos useEffects para evitar warnings de 'no-unused-vars' e garantir inicialização única
+  const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
+  const firebaseConfig = {
+    apiKey: "AIzaSyBwlHn7CommvM6psGiXjwN3AWYemiJ9uj4",
+    authDomain: "lavourasapp.firebaseapp.com",
+    projectId: "lavourasapp",
+    storageBucket: "lavourasapp.firebasestorage.app",
+    messagingSenderId: "576349607032",
+    appId: "1:576349607032:web:3a36527be7aaf7ee2ec98d",
+    measurementId: "G-W5CJR02XDX"
+  };
+
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -36,17 +49,7 @@ const App = () => {
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
     try {
-      const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
       const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : '';
-      const firebaseConfig = {
-        apiKey: "AIzaSyBwlHn7CommvM6psGiXjwN3AWYemiJ9uj4",
-        authDomain: "lavourasapp.firebaseapp.com",
-        projectId: "lavourasapp",
-        storageBucket: "lavourasapp.firebasestorage.app",
-        messagingSenderId: "576349607032",
-        appId: "1:576349607032:web:3a36527be7aaf7ee2ec98d",
-        measurementId: "G-W5CJR02XDX"
-      };
 
       if (!Object.keys(firebaseConfig).length) {
         throw new Error("A configuração do Firebase está faltando. Por favor, certifique-se de que __firebase_config foi fornecido.");
@@ -71,7 +74,8 @@ const App = () => {
             if (initialAuthToken) {
               await signInWithCustomToken(firebaseAuth, initialAuthToken);
             } else {
-              await signInAnonymously(firebaseAuth);
+              // Não tenta signInAnonymously aqui se a intenção é forçar login com email/senha
+              // A tela de login/cadastro será exibida se userId for null
             }
           } catch (signInError) {
             console.error("Erro ao autenticar no Firebase:", signInError);
@@ -90,12 +94,11 @@ const App = () => {
       setError(`Erro na inicialização do Firebase: ${err.message}`);
       setLoading(false);
     }
-  }, []);
+  }, [firebaseConfig]); // Adiciona firebaseConfig como dependência para garantir que seja inicializado corretamente
 
   // Busca relatórios quando a autenticação está pronta e o db está disponível
   useEffect(() => {
     if (db && userId && isAuthReady) {
-      const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
       const reportsCollectionRef = collection(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`);
       const q = query(reportsCollectionRef);
 
@@ -119,7 +122,7 @@ const App = () => {
 
       return () => unsubscribe();
     }
-  }, [db, userId, isAuthReady]);
+  }, [db, userId, isAuthReady, currentAppId]); // Adiciona currentAppId como dependência
 
   // Funções de autenticação
   const handleRegister = async (e) => {
@@ -188,7 +191,6 @@ const App = () => {
 
   const handleDeleteReport = async (reportId) => {
     if (!db || !userId) return;
-    const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
     if (window.confirm("Tem certeza que deseja excluir este relatório?")) {
       try {
         await deleteDoc(doc(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`, reportId));
@@ -203,7 +205,6 @@ const App = () => {
   const handleSaveReport = async (reportData) => {
     if (!db || !userId) return;
     setLoading(true);
-    const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
     try {
       if (reportData.id) {
         const { id, ...dataToUpdate } = reportData;
