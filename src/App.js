@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'; // Importado useMemo
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'; // Removido signInWithCustomToken
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
