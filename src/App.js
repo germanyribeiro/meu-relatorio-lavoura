@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'; // Importado useMemo
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth'; // Removido signInWithCustomToken
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
@@ -40,6 +40,7 @@ const App = () => {
   const [error, setError] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false); // Estado para controlar a visibilidade do modal de fotos
   const [selectedPhoto, setSelectedPhoto] = useState(''); // Estado para a foto selecionada no modal
+  const [isPdfMode, setIsPdfMode] = useState(false); // Novo estado para controlar o modo de geração de PDF
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
@@ -239,11 +240,17 @@ const App = () => {
       return;
     }
 
+    setIsPdfMode(true); // Define o modo PDF como true antes de gerar o PDF
+    
+    const screenWidth = window.innerWidth;
+    // Ajusta a escala para html2canvas: menor para dispositivos móveis, maior para desktop
+    const scale = screenWidth < 768 ? 1.5 : 2; 
+
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
-    tempDiv.style.width = contentRef.current.offsetWidth + 'px';
-    tempDiv.style.height = contentRef.current.offsetHeight + 'px';
+    tempDiv.style.width = contentRef.current.offsetWidth + 'px'; // Mantém a largura do elemento original
+    tempDiv.style.height = contentRef.current.offsetHeight + 'px'; // Mantém a altura do elemento original
     tempDiv.style.overflow = 'hidden';
 
     const clonedContent = contentRef.current.cloneNode(true);
@@ -251,7 +258,7 @@ const App = () => {
     document.body.appendChild(tempDiv);
 
     try {
-      const canvas = await window.html2canvas(clonedContent, { scale: 2 });
+      const canvas = await window.html2canvas(clonedContent, { scale: scale }); // Usa a escala dinâmica
       const imgData = canvas.toDataURL('image/png');
 
       const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
@@ -280,6 +287,7 @@ const App = () => {
       if (document.body.contains(tempDiv)) {
         document.body.removeChild(tempDiv);
       }
+      setIsPdfMode(false); // Define o modo PDF como false após a geração
     }
   };
 
@@ -423,6 +431,7 @@ const App = () => {
             isEditing={view === 'edit'}
             onGeneratePdf={generatePdfFromReportData}
             openPhotoModal={openPhotoModal}
+            isPdfMode={isPdfMode}
           />
         )}
         {view === 'view' && currentReport && (
@@ -431,6 +440,7 @@ const App = () => {
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
             openPhotoModal={openPhotoModal}
+            isPdfMode={isPdfMode}
           />
         )}
       </main>
@@ -513,7 +523,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal }) => {
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal, isPdfMode }) => {
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -711,22 +721,26 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
-            {/* Input de arquivo oculto */}
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden" // Esconde o input padrão
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current.click()} // Aciona o clique no input oculto
-              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
-            >
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Adicionar Foto do Dispositivo
-            </button>
+            {/* Condicionalmente renderiza o botão e input de foto */}
+            {!isPdfMode && (
+              <>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden" // Esconde o input padrão
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current.click()} // Aciona o clique no input oculto
+                  className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
+                >
+                  <PlusCircle className="w-5 h-5 mr-2" />
+                  Adicionar Foto do Dispositivo
+                </button>
+              </>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {formData.fotos.map((photoUrl, index) => (
                 <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm aspect-w-16 aspect-h-9">
@@ -740,14 +754,17 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
                     }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    aria-label="Remover foto"
-                  >
-                    <XCircle className="w-4 h-4" />
-                  </button>
+                  {/* Oculta o botão de remover foto no modo PDF */}
+                  {!isPdfMode && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(index)}
+                      className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      aria-label="Remover foto"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -792,10 +809,11 @@ ReportForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
-  openPhotoModal: PropTypes.func.isRequired, // Adicionado PropTypes para openPhotoModal
+  openPhotoModal: PropTypes.func.isRequired,
+  isPdfMode: PropTypes.bool.isRequired, // Adicionado nova propType
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal }) => { // Adicionado openPhotoModal
+const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode }) => { // Recebe isPdfMode
   const reportContentRef = useRef(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
@@ -918,6 +936,7 @@ ReportView.propTypes = {
   onCancel: PropTypes.func.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
   openPhotoModal: PropTypes.func.isRequired,
+  isPdfMode: PropTypes.bool.isRequired, // Adicionado nova propType
 };
 
 // Novo componente de Modal para exibir a foto em tela cheia
