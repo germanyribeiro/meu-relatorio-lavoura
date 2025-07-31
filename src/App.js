@@ -9,6 +9,7 @@ import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader
 // As bibliotecas jsPDF e html2canvas serão carregadas via CDN no index.html.
 // Removendo os imports diretos para evitar erros de "Could not resolve" no ambiente de compilação.
 // Certifique-se de adicionar as seguintes tags <script> no <head> ou no <body> do seu public/index.html:
+// <script src="https://cdn.tailwindcss.com"></script>
 // <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 // <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 import PropTypes from 'prop-types';
@@ -307,6 +308,8 @@ const App = () => {
             report={currentReport}
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
+            // Pass handleAddPhoto to ReportView for its photo section
+            onAddPhoto={handleAddPhoto}
           />
         )}
       </main>
@@ -444,8 +447,8 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Conteúdo do formulário que será capturado para o PDF */}
-        {/* Margens ABNT aproximadas: Esquerda 3cm (px-28), Direita 2cm (px-20), Topo 3cm (py-20), Rodapé 2cm (py-20) */}
-        <div ref={reportContentRef} className="px-28 py-20 border border-gray-200 rounded-xl bg-gray-50 space-y-4">
+        {/* Ajuste de margens para responsividade: p-4 em telas pequenas, sm:p-6, md:p-12, lg:px-28 lg:py-20 em telas maiores */}
+        <div ref={reportContentRef} className="p-4 sm:p-6 md:p-12 lg:px-28 lg:py-20 border border-gray-200 rounded-xl bg-gray-50 space-y-4">
           <h3 className="text-xl font-bold text-green-700 mb-4 text-center">Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -652,7 +655,7 @@ ReportForm.propTypes = {
   onGeneratePdf: PropTypes.func.isRequired,
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf }) => {
+const ReportView = ({ report, onCancel, onGeneratePdf, onAddPhoto }) => { // Adicionado onAddPhoto
   const reportContentRef = useRef(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
@@ -668,8 +671,8 @@ const ReportView = ({ report, onCancel, onGeneratePdf }) => {
         <Eye className="w-6 h-6 mr-2" />
         Detalhes do Relatório
       </h2>
-      {/* Margens ABNT aproximadas: Esquerda 3cm (px-28), Direita 2cm (px-20), Topo 3cm (py-20), Rodapé 2cm (py-20) */}
-      <div ref={reportContentRef} className="px-28 py-20 border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4">
+      {/* Ajuste de margens para responsividade: p-4 em telas pequenas, sm:p-6, md:p-12, lg:px-28 lg:py-20 em telas maiores */}
+      <div ref={reportContentRef} className="p-4 sm:p-6 md:p-12 lg:px-28 lg:py-20 border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4">
         <h3 className="text-xl font-bold text-green-700 mb-4 text-center">Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -727,19 +730,8 @@ const ReportView = ({ report, onCancel, onGeneratePdf }) => {
               <Camera className="w-5 h-5 mr-2" />
               Fotos
             </h4>
-            <p className="text-lg text-gray-600 mb-3">
-              Adicione fotos colando a URL da imagem. (Não é possível acessar a câmera do dispositivo diretamente neste ambiente).
-            </p>
-            <button
-              type="button"
-              onClick={handleAddPhoto}
-              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
-            >
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Adicionar Foto (URL)
-            </button>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {formData.fotos.map((photoUrl, index) => (
+              {report.fotos.map((photoUrl, index) => (
                 <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm aspect-w-16 aspect-h-9">
                   <img
                     src={photoUrl}
@@ -784,6 +776,7 @@ ReportView.propTypes = {
   report: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
+  onAddPhoto: PropTypes.func.isRequired, // Adicionado PropTypes para onAddPhoto
 };
 
 export default App;
