@@ -308,8 +308,6 @@ const App = () => {
             report={currentReport}
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
-            // Pass handleAddPhoto to ReportView for its photo section
-            onAddPhoto={handleAddPhoto}
           />
         )}
       </main>
@@ -405,19 +403,26 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
 
   const [loadingPdf, setLoadingPdf] = useState(false);
   const reportContentRef = useRef(null);
+  const fileInputRef = useRef(null); // Referência para o input de arquivo
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddPhoto = () => {
-    const imageUrl = prompt("Por favor, insira a URL da imagem (ou dados Base64):");
-    if (imageUrl) {
-      setFormData(prev => ({
-        ...prev,
-        fotos: [...prev.fotos, imageUrl]
-      }));
+  // Função para lidar com a seleção de arquivo
+  const handleFileChange = (e) => {
+    const files = e.target.files;
+    if (files.length > 0) {
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          fotos: [...prev.fotos, reader.result] // Adiciona a imagem como Data URL
+        }));
+      };
+      reader.readAsDataURL(file); // Lê o arquivo como Data URL
     }
   };
 
@@ -578,16 +583,21 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
-            <p className="text-lg text-gray-600 mb-3">
-              Adicione fotos colando a URL da imagem. (Não é possível acessar a câmera do dispositivo diretamente neste ambiente).
-            </p>
+            {/* Input de arquivo oculto */}
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden" // Esconde o input padrão
+            />
             <button
               type="button"
-              onClick={handleAddPhoto}
+              onClick={() => fileInputRef.current.click()} // Aciona o clique no input oculto
               className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
             >
               <PlusCircle className="w-5 h-5 mr-2" />
-              Adicionar Foto (URL)
+              Adicionar Foto do Dispositivo
             </button>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {formData.fotos.map((photoUrl, index) => (
@@ -595,7 +605,8 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
                   <img
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover cursor-pointer" // Adicionado cursor-pointer
+                    onClick={() => window.open(photoUrl, '_blank')} // Abre a foto em nova aba
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
@@ -655,7 +666,7 @@ ReportForm.propTypes = {
   onGeneratePdf: PropTypes.func.isRequired,
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, onAddPhoto }) => { // Adicionado onAddPhoto
+const ReportView = ({ report, onCancel, onGeneratePdf }) => { // Removido onAddPhoto
   const reportContentRef = useRef(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
 
@@ -736,7 +747,8 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onAddPhoto }) => { // Adi
                   <img
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover cursor-pointer" // Adicionado cursor-pointer
+                    onClick={() => window.open(photoUrl, '_blank')} // Abre a foto em nova aba
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
@@ -776,7 +788,7 @@ ReportView.propTypes = {
   report: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
-  onAddPhoto: PropTypes.func.isRequired, // Adicionado PropTypes para onAddPhoto
+  // onAddPhoto: PropTypes.func.isRequired, // Removido PropTypes para onAddPhoto
 };
 
 export default App;
