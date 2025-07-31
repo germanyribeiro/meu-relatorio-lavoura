@@ -25,7 +25,7 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Firebase Initialization and Authentication
+  // Inicialização e Autenticação do Firebase
   useEffect(() => {
     try {
       // Declarando __app_id e __initial_auth_token para que o ESLint os reconheça
@@ -45,7 +45,7 @@ const App = () => {
       };
 
       if (!Object.keys(firebaseConfig).length) {
-        throw new Error("Firebase config is missing. Please ensure __firebase_config is provided.");
+        throw new Error("A configuração do Firebase está faltando. Por favor, certifique-se de que __firebase_config foi fornecido.");
       }
 
       const app = initializeApp(firebaseConfig);
@@ -88,26 +88,26 @@ const App = () => {
     }
   }, []);
 
-  // Fetch reports when auth is ready and db is available
+  // Busca relatórios quando a autenticação está pronta e o db está disponível
   useEffect(() => {
     if (db && userId && isAuthReady) {
       // Redefine para uso aqui, usando window para consistência com a declaração acima
       const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
       const reportsCollectionRef = collection(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`);
-      // Note: orderBy is commented out to avoid potential index issues as per instructions.
+      // Nota: orderBy está comentado para evitar possíveis problemas de índice conforme as instruções.
       // const q = query(reportsCollectionRef, orderBy('createdAt', 'desc'));
-      const q = query(reportsCollectionRef); // Fetch all and sort in memory
+      const q = query(reportsCollectionRef); // Busca tudo e ordena em memória
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const fetchedReports = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
-        // Sort in memory by createdAt if available, otherwise by dataVisita
+        // Ordena em memória por createdAt se disponível, caso contrário por dataVisita
         fetchedReports.sort((a, b) => {
           const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.dataVisita);
           const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.dataVisita);
-          return dateB - dateA; // Descending order
+          return dateB - dateA; // Ordem decrescente
         });
         setReports(fetchedReports);
         setLoading(false);
@@ -140,7 +140,7 @@ const App = () => {
     if (!db || !userId) return;
     // Define currentAppId para uso aqui
     const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
-    if (window.confirm("Tem certeza que deseja excluir este relatório?")) { // Using window.confirm for simplicity, but in a real app, use a custom modal.
+    if (window.confirm("Tem certeza que deseja excluir este relatório?")) { // Usando window.confirm para simplificar, mas em um aplicativo real, use um modal personalizado.
       try {
         await deleteDoc(doc(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`, reportId));
         console.log("Relatório excluído com sucesso!");
@@ -158,7 +158,7 @@ const App = () => {
     const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
     try {
       if (reportData.id) {
-        // Update existing report
+        // Atualiza relatório existente
         const { id, ...dataToUpdate } = reportData;
         await updateDoc(doc(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`, id), {
           ...dataToUpdate,
@@ -166,7 +166,7 @@ const App = () => {
         });
         console.log("Relatório atualizado com sucesso!");
       } else {
-        // Add new report
+        // Adiciona novo relatório
         await addDoc(collection(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`), {
           ...reportData,
           createdAt: serverTimestamp(),
@@ -238,7 +238,7 @@ const App = () => {
       pdf.save(filename);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      alert("Erro ao gerar PDF. Por favor, tente novamente."); // Usando alert para simplificar, mas em app real use modal customizado
+      alert("Erro ao gerar PDF. Por favor, tente novamente."); // Usando alert para simplificar, mas em aplicativo real use modal personalizado
     } finally {
       // Remove o div temporário do DOM
       if (document.body.contains(tempDiv)) {
@@ -389,7 +389,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
-    dataVisita: new Date().toISOString().split('T')[0], // Default to today
+    dataVisita: new Date().toISOString().split('T')[0], // Padrão para hoje
     condicoesClimaticas: '',
     estagioFenologico: '',
     observacoesGerais: '',
@@ -397,8 +397,8 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf }) => {
     orientacoesTecnicas: '',
     potencialProdutivo: '',
     responsavelTecnico: '', // Novo campo
-    fotos: [], // Array of image URLs
-    ...report, // Pre-fill if editing
+    fotos: [], // Array de URLs de imagem
+    ...report, // Preenche se estiver editando
   });
 
   const [loadingPdf, setLoadingPdf] = useState(false);
