@@ -229,18 +229,23 @@ const App = () => {
   };
 
   const generatePdfFromReportData = async (reportData, contentRef) => {
+    console.log("DEBUG: Função generatePdfFromReportData iniciada."); // Log de início da função
+
     if (!contentRef.current) {
-      console.error("Conteúdo do relatório não encontrado para gerar PDF.");
+      console.error("ERRO: Conteúdo do relatório não encontrado para gerar PDF. contentRef.current é nulo.");
+      setError("Erro: Não foi possível encontrar o conteúdo do relatório para gerar o PDF.");
+      setLoadingPdf(false);
       return;
     }
 
     // Adicionado console.log para verificar a disponibilidade das bibliotecas
-    console.log("Verificando jsPDF:", typeof window.jspdf);
-    console.log("Verificando html2canvas:", typeof window.html2canvas);
+    console.log("DEBUG: Verificando jsPDF:", typeof window.jspdf);
+    console.log("DEBUG: Verificando html2canvas:", typeof window.html2canvas);
 
     if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-      console.error("Bibliotecas jsPDF ou html2canvas não carregadas. Certifique-se de que as tags <script> estão no index.html.");
-      alert("Erro: As bibliotecas de PDF não foram carregadas. Por favor, recarregue a página e verifique a conexão com a internet.");
+      console.error("ERRO CRÍTICO: Bibliotecas jsPDF ou html2canvas não carregadas. Verifique seu public/index.html e a conexão de internet.");
+      alert("Erro: As bibliotecas de PDF (jsPDF/html2canvas) não foram carregadas. Por favor, recarregue a página, verifique sua conexão e o console do navegador.");
+      setError("Erro: As bibliotecas de PDF não foram carregadas. Verifique o console do navegador.");
       setLoadingPdf(false); // Garante que o estado de loading seja resetado
       return;
     }
@@ -258,11 +263,6 @@ const App = () => {
       const tempDiv = document.createElement('div');
       tempDiv.style.position = 'absolute';
       tempDiv.style.left = '-9999px';
-      // Para garantir que o html2canvas capture a largura e altura corretas,
-      // podemos não definir width/height fixos no tempDiv, mas deixar o html2canvas
-      // determinar com base no clonedContent.
-      // tempDiv.style.width = contentRef.current.offsetWidth + 'px'; 
-      // tempDiv.style.height = contentRef.current.offsetHeight + 'px'; 
       tempDiv.style.overflow = 'hidden';
 
       const clonedContent = contentRef.current.cloneNode(true);
@@ -270,9 +270,12 @@ const App = () => {
       document.body.appendChild(tempDiv);
 
       try {
+        console.log("DEBUG: Iniciando html2canvas...");
         const canvas = await window.html2canvas(clonedContent, { scale: scale }); // Usa a escala dinâmica
+        console.log("DEBUG: html2canvas concluído. Canvas gerado:", canvas);
         const imgData = canvas.toDataURL('image/png');
 
+        console.log("DEBUG: Iniciando jsPDF...");
         const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
         const imgWidth = 210;
         const pageHeight = 297;
@@ -291,16 +294,21 @@ const App = () => {
         }
 
         const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
+        console.log("DEBUG: PDF object criado. Tentando salvar o PDF com nome:", filename);
         pdf.save(filename);
+        console.log("DEBUG: PDF salvo com sucesso (ou tentativa de download iniciada).");
       } catch (error) {
-        console.error("Erro ao gerar PDF:", error);
-        alert("Erro ao gerar PDF. Por favor, tente novamente.");
+        console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
+        alert("Erro ao gerar PDF. Por favor, verifique o console do navegador para mais detalhes.");
+        setError(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
       } finally {
         if (document.body.contains(tempDiv)) {
           document.body.removeChild(tempDiv);
+          console.log("DEBUG: tempDiv removido do DOM.");
         }
         setIsPdfMode(false); // Define o modo PDF como false após a geração
         setLoadingPdf(false); // Garante que o estado de loading seja resetado
+        console.log("DEBUG: Geração de PDF finalizada (limpeza de estados).");
       }
     }); // Fim do requestAnimationFrame
   };
@@ -591,9 +599,10 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
   };
 
   const handleGeneratePdfClick = async () => {
+    console.log("DEBUG: Botão Gerar PDF clicado."); // Log de clique no botão
     setLoadingPdf(true);
     await onGeneratePdf(formData, reportContentRef);
-    setLoadingPdf(false);
+    // setLoadingPdf(false); // Removido para evitar redundância, já é tratado no finally da onGeneratePdf
   };
 
   return (
