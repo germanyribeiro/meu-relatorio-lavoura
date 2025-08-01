@@ -1,26 +1,25 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- Garante responsividade -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Web site created using create-react-app"
+      content="Aplicativo de Relatórios de Acompanhamento de Lavouras"
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Relatórios de Lavouras</title>
-
-    <!-- Bibliotecas de Estilo e Funcionalidade (MUITO IMPORTANTE!) -->
-    <!-- Tailwind CSS -->
+    <!-- Carrega Tailwind CSS para estilização -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- jsPDF para geração de PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- html2canvas para captura de tela para PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+    <!-- Define a fonte Inter para todo o documento -->
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+    </style>
   </head>
   <body>
     <noscript>Você precisa habilitar o JavaScript para rodar este aplicativo.</noscript>
@@ -29,11 +28,15 @@
       Este arquivo HTML é um template.
       Se você abri-lo diretamente no navegador, verá uma página vazia.
 
-      Você pode adicionar webfonts, meta tags ou análises a este arquivo.
-      A etapa de build colocará os scripts empacotados na tag <body>.
+      Você pode adicionar webfonts, meta tags ou ferramentas de análise a este arquivo.
+      A etapa de build irá colocar os scripts agrupados no <body/>.
 
-      Para iniciar o desenvolvimento, execute `npm start` ou `yarn start`.
-      Para criar um bundle de produção, use `npm run build` ou `yarn build`.
+      Para começar o desenvolvimento, rode `npm start` ou `yarn start`.
+      Para criar um build de produção, use `npm run build` ou `yarn build`.
     -->
+
+    <!-- **ESTAS DUAS LINHAS SÃO CRUCIAIS PARA O PDF** -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </body>
 </html>
