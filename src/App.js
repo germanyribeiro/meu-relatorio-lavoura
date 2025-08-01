@@ -1,17 +1,18 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'; // Importado useMemo e useCallback
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged, 
+  signInWithCustomToken
+} from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
 import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut } from 'lucide-react';
 
-// As bibliotecas jsPDF e html2canvas serão carregadas via CDN no index.html.
-// Removendo os imports diretos para evitar erros de "Could not resolve" no ambiente de compilação.
-// Certifique-se de adicionar as seguintes tags <script> no <head> ou no <body> do seu public/index.html:
-// <script src="https://cdn.tailwindcss.com"></script>
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 import PropTypes from 'prop-types';
 
 const App = () => {
@@ -26,7 +27,7 @@ const App = () => {
       try {
         const parsedConfig = JSON.parse(window.__firebase_config);
         // Verifica se a configuração parseada é um objeto válido e não está vazia
-        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) {
+        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) { // CORREÇÃO AQUI: 'object"' para 'object'
           console.log("DEBUG: Tentando usar configuração do Firebase fornecida pelo ambiente Canvas.");
           configToUse = parsedConfig;
         }
@@ -39,7 +40,7 @@ const App = () => {
     if (!configToUse) {
       console.log("DEBUG: Usando configuração do Firebase hardcoded (fallback).");
       configToUse = {
-        apiKey: "AIzaSyAmsCvmsF1ocsepjyT8xZtKTLpqW-_-ioE", // Esta é a chave de API que você forneceu
+        apiKey: "AIzaSyBwlHn7CommvM6psGiXjwN3AWYemiJ9uj4", // CHAVE DE API ATUALIZADA AQUI
         authDomain: "lavourasapp.firebaseapp.com",
         projectId: "lavourasapp",
         storageBucket: "lavourasapp.firebasestorage.app",
@@ -49,10 +50,9 @@ const App = () => {
       };
     }
     
-    // **NOVO LOG:** Exibe a configuração final que será usada
     console.log("DEBUG: Configuração FINAL do Firebase sendo usada:", configToUse);
     return configToUse;
-  }, []); // Array de dependências vazio para garantir que seja criado apenas uma vez
+  }, []);
 
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
@@ -63,16 +63,16 @@ const App = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showPhotoModal, setShowPhotoModal] = useState(false); // Estado para controlar a visibilidade do modal de fotos
-  const [selectedPhoto, setSelectedPhoto] = useState(''); // Estado para a foto selecionada no modal
-  const [isPdfMode, setIsPdfMode] = useState(false); // Novo estado para controlar o modo de geração de PDF
-  const [loadingPdf, setLoadingPdf] = useState(false); // Movido para o componente App
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState('');
+  const [isPdfMode, setIsPdfMode] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
-  const [isLoginView, setIsLoginView] = useState(true); // true para login, false para cadastro
+  const [isLoginView, setIsLoginView] = useState(true);
 
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
@@ -88,32 +88,19 @@ const App = () => {
 
         setDb(firestore);
         setAuth(firebaseAuth);
+        console.log("DEBUG: Firebase App e Auth inicializados.");
 
-        // Lógica de autenticação inicial
         if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+          console.log("DEBUG: Tentando autenticar com token personalizado do Canvas...");
           try {
             await signInWithCustomToken(firebaseAuth, window.__initial_auth_token);
-            console.log("DEBUG: Autenticado com token personalizado do Canvas.");
+            console.log("DEBUG: Autenticado com token personalizado do Canvas com sucesso.");
           } catch (tokenError) {
-            console.error("Erro ao autenticar com token personalizado do Canvas:", tokenError);
-            // Se o token personalizado falhar, tenta login anônimo como fallback
-            try {
-              await signInAnonymously(firebaseAuth);
-              console.log("DEBUG: Autenticado anonimamente após falha do token personalizado.");
-            } catch (anonError) {
-              console.error("Erro ao autenticar anonimamente:", anonError);
-              setError(`Erro de autenticação inicial: ${anonError.message}`);
-            }
+            console.error("DEBUG: Erro ao autenticar com token personalizado do Canvas:", tokenError);
+            setError(`Erro de autenticação inicial: ${tokenError.message}. Por favor, tente fazer login ou cadastre-se.`);
           }
         } else {
-          // Se não houver token personalizado, tenta login anônimo
-          try {
-            await signInAnonymously(firebaseAuth);
-            console.log("DEBUG: Autenticado anonimamente.");
-          } catch (anonError) {
-            console.error("Erro ao autenticar anonimamente:", anonError);
-            setError(`Erro de autenticação inicial: ${anonError.message}`);
-          }
+          console.log("DEBUG: Nenhum token de autenticação personalizado do Canvas encontrado. Iniciando sem autenticação.");
         }
 
         const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
@@ -122,27 +109,30 @@ const App = () => {
             setIsAuthReady(true);
             setLoading(false);
             setAuthMessage('');
+            console.log("DEBUG: onAuthStateChanged - Usuário logado:", user.uid);
           } else {
             setUserId(null);
             setIsAuthReady(true);
             setLoading(false);
+            console.log("DEBUG: onAuthStateChanged - Nenhum usuário logado.");
           }
         });
 
-        return () => unsubscribe(); // Retorna a função de cleanup para o onAuthStateChanged
+        return () => unsubscribe();
       } catch (err) {
-        console.error("Erro na inicialização do Firebase:", err);
+        console.error("DEBUG: Erro na inicialização do Firebase:", err);
         setError(`Erro na inicialização do Firebase: ${err.message}`);
         setLoading(false);
       }
     };
 
     initializeFirebase();
-  }, [firebaseConfig]); // firebaseConfig agora está memorizado, então esta dependência é estável
+  }, [firebaseConfig]);
 
   // Busca relatórios quando a autenticação está pronta e o db está disponível
   useEffect(() => {
     if (db && userId && isAuthReady) {
+      console.log("DEBUG: Buscando relatórios para o usuário:", userId);
       const reportsCollectionRef = collection(db, `artifacts/${currentAppId}/users/${userId}/relatoriosLavouras`);
       const q = query(reportsCollectionRef);
 
@@ -158,13 +148,17 @@ const App = () => {
         });
         setReports(fetchedReports);
         setLoading(false);
+        console.log("DEBUG: Relatórios carregados com sucesso.");
       }, (err) => {
-        console.error("Erro ao buscar relatórios:", err);
+        console.error("DEBUG: Erro ao buscar relatórios:", err);
         setError("Erro ao carregar relatórios. Por favor, recarregue a página.");
         setLoading(false);
       });
 
       return () => unsubscribe();
+    } else if (isAuthReady && !userId) {
+      console.log("DEBUG: Usuário não autenticado, não buscando relatórios.");
+      setLoading(false);
     }
   }, [db, userId, isAuthReady, currentAppId]);
 
@@ -173,13 +167,15 @@ const App = () => {
     e.preventDefault();
     setLoading(true);
     setAuthMessage('');
+    console.log("DEBUG: Tentando cadastrar com e-mail:", email);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
       setAuthMessage("Cadastro realizado com sucesso! Você está logado.");
       setEmail('');
       setPassword('');
+      console.log("DEBUG: Cadastro bem-sucedido.");
     } catch (error) {
-      console.error("Erro no cadastro:", error);
+      console.error("DEBUG: Erro no cadastro:", error);
       setAuthMessage(`Erro ao cadastrar: ${error.message}`);
     } finally {
       setLoading(false);
@@ -190,13 +186,15 @@ const App = () => {
     e.preventDefault();
     setLoading(true);
     setAuthMessage('');
+    console.log("DEBUG: Tentando login com e-mail:", email);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setAuthMessage("Login realizado com sucesso!");
       setEmail('');
       setPassword('');
+      console.log("DEBUG: Login bem-sucedido.");
     } catch (error) {
-      console.error("Erro no login:", error);
+      console.error("DEBUG: Erro no login:", error);
       setAuthMessage(`Erro ao fazer login: ${error.message}`);
     } finally {
       setLoading(false);
@@ -208,10 +206,11 @@ const App = () => {
     try {
       await signOut(auth);
       setAuthMessage("Você foi desconectado.");
-      setUserId(null); // Limpa o userId para mostrar a tela de login
-      setView('list'); // Volta para a lista ao deslogar
+      setUserId(null);
+      setView('list');
+      console.log("DEBUG: Logout bem-sucedido.");
     } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      console.error("DEBUG: Erro ao fazer logout:", error);
       setAuthMessage(`Erro ao fazer logout: ${error.message}`);
     } finally {
       setLoading(false);
@@ -310,10 +309,8 @@ const App = () => {
     
     setTimeout(() => {
       requestAnimationFrame(async () => {
-        // Reduzindo a escala para evitar RangeError: Invalid string length
-        // A escala de 0.75 ou 1.0 geralmente é suficiente para boa qualidade e evita problemas de memória.
         const screenWidth = window.innerWidth;
-        const scale = screenWidth < 768 ? 0.75 : 1.0; // Ajustado para 0.75 em mobile e 1.0 em desktop
+        const scale = screenWidth < 768 ? 0.75 : 1.0;
 
         const tempDiv = document.createElement('div');
         tempDiv.style.position = 'absolute';
@@ -321,7 +318,7 @@ const App = () => {
         tempDiv.style.overflow = 'hidden';
 
         const clonedContent = contentRef.current.cloneNode(true);
-        clonedContent.style.width = '100%'; // Garante que o conteúdo clonado ocupe a largura total para captura
+        clonedContent.style.width = '100%';
         tempDiv.appendChild(clonedContent);
         document.body.appendChild(tempDiv);
 
@@ -385,8 +382,7 @@ const App = () => {
         }
       });
     }, 100);
-  }, []); // Dependências para useCallback agora está vazio.
-  // As funções de atualização de estado (setLoadingPdf, setIsPdfMode, setError) são estáveis e não precisam ser dependências.
+  }, []);
 
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
@@ -471,6 +467,7 @@ const App = () => {
                 {isLoginView ? 'Entrar' : 'Cadastrar'}
               </button>
             </form>
+
             <button
               onClick={() => setIsLoginView(!isLoginView)}
               className="mt-4 text-blue-600 hover:underline text-sm"
@@ -682,8 +679,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
 
   const handleGeneratePdfClick = async () => {
     console.log("DEBUG: Botão Gerar PDF clicado no ReportForm.");
-    setLoadingPdf(true); // Usa o setter recebido via prop
-    // Passa os setters como argumentos para a função onGeneratePdf
+    setLoadingPdf(true);
     await onGeneratePdf(formData, reportContentRef, setLoadingPdf, setIsPdfMode, setError);
   };
 
@@ -920,8 +916,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
   const reportContentRef = useRef(null);
 
   const handleGeneratePdfClick = async () => {
-    setLoadingPdf(true); // Usa o setter recebido via prop
-    // Passa os setters como argumentos para a função onGeneratePdf
+    setLoadingPdf(true);
     await onGeneratePdf(report, reportContentRef, setLoadingPdf, setIsPdfMode, setError);
   };
 
