@@ -249,11 +249,15 @@ const App = () => {
       // Ajusta a escala para html2canvas: menor para dispositivos móveis, maior para desktop
       const scale = screenWidth < 768 ? 1.5 : 2; 
 
+      // Cria o tempDiv e clona o conteúdo *dentro* do requestAnimationFrame
       const tempDiv = document.createElement('div');
       tempDiv.style.position = 'absolute';
       tempDiv.style.left = '-9999px';
-      tempDiv.style.width = contentRef.current.offsetWidth + 'px'; // Mantém a largura do elemento original
-      tempDiv.style.height = contentRef.current.offsetHeight + 'px'; // Mantém a altura do elemento original
+      // Para garantir que o html2canvas capture a largura e altura corretas,
+      // podemos não definir width/height fixos no tempDiv, mas deixar o html2canvas
+      // determinar com base no clonedContent.
+      // tempDiv.style.width = contentRef.current.offsetWidth + 'px'; 
+      // tempDiv.style.height = contentRef.current.offsetHeight + 'px'; 
       tempDiv.style.overflow = 'hidden';
 
       const clonedContent = contentRef.current.cloneNode(true);
