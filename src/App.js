@@ -692,10 +692,10 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
       <form onSubmit={handleSubmit} className="space-y-6">
         <div ref={reportContentRef} className={`
           p-4 sm:p-6
-          ${isPdfMode ? 'px-8 py-8 text-xs' : 'md:p-12 lg:px-28 lg:py-20'} 
+          ${isPdfMode ? 'px-8 py-8 text-xs leading-snug' : 'md:p-12 lg:px-28 lg:py-20'} 
           border border-gray-200 rounded-xl bg-gray-50 space-y-4
         `}>
-          <h3 className={`text-xl font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Informações da Visita</h3>
+          <h3 className={`font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="propriedade" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Propriedade:</label>
@@ -757,7 +757,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
             </div>
           </div>
 
-          <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Observações Técnicas</h3>
+          <h3 className={`font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Observações Técnicas</h3>
           <div>
             <label htmlFor="estagioFenologico" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Estágio Fenológico Observado:</label>
             <input
@@ -819,7 +819,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
           </div>
 
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
-            <h3 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-sm' : ''}`}>
+            <h3 className={`font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-sm' : 'text-lg'}`}>
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
@@ -938,10 +938,10 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
       </h2>
       <div ref={reportContentRef} className={`
           p-4 sm:p-6
-          ${isPdfMode ? 'px-8 py-8 text-xs' : 'md:p-12 lg:px-28 lg:py-20'} 
+          ${isPdfMode ? 'px-8 py-8 text-xs leading-snug' : 'md:p-12 lg:px-28 lg:py-20'} 
           border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
         `}>
-        <h3 className={`text-xl font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Informações da Visita</h3>
+        <h3 className={`font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Propriedade:</p>
@@ -965,7 +965,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
           </div>
         </div>
 
-        <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Observações Técnicas</h3>
+        <h3 className={`font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Observações Técnicas</h3>
         <div>
           <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Estágio Fenológico Observado:</p>
           <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.estagioFenologico}</p>
@@ -993,7 +993,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
 
         {report.fotos && report.fotos.length > 0 && (
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
-            <h4 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-xs' : ''}`}>
+            <h4 className={`font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-xs' : 'text-lg'}`}>
               <Camera className="w-5 h-5 mr-2" />
               Fotos
             </h4>
