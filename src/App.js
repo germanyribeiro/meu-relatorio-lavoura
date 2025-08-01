@@ -27,7 +27,7 @@ const App = () => {
       try {
         const parsedConfig = JSON.parse(window.__firebase_config);
         // Verifica se a configuração parseada é um objeto válido e não está vazia
-        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) { // CORREÇÃO AQUI: 'object"' para 'object'
+        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) {
           console.log("DEBUG: Tentando usar configuração do Firebase fornecida pelo ambiente Canvas.");
           configToUse = parsedConfig;
         }
@@ -72,7 +72,7 @@ const App = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
-  const [isLoginView, setIsLoginView] = true;
+  const [isLoginView, setIsLoginView] = useState(true);
 
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
@@ -842,9 +842,15 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 </button>
               </>
             )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className={`
+              grid gap-4
+              ${isPdfMode ? 'flex flex-wrap' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}
+            `}>
               {formData.fotos.map((photoUrl, index) => (
-                <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm aspect-w-16 aspect-h-9">
+                <div key={index} className={`
+                  relative group rounded-lg overflow-hidden shadow-sm
+                  ${isPdfMode ? 'w-16 h-16 mr-2 mb-2' : 'aspect-w-16 aspect-h-9'}
+                `}>
                   <img
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
@@ -991,9 +997,15 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
               <Camera className="w-5 h-5 mr-2" />
               Fotos
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className={`
+              grid gap-4
+              ${isPdfMode ? 'flex flex-wrap' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}
+            `}>
               {report.fotos.map((photoUrl, index) => (
-                <div key={index} className="relative group rounded-lg overflow-hidden shadow-sm aspect-w-16 aspect-h-9">
+                <div key={index} className={`
+                  relative group rounded-lg overflow-hidden shadow-sm
+                  ${isPdfMode ? 'w-16 h-16 mr-2 mb-2' : 'aspect-w-16 aspect-h-9'}
+                `}>
                   <img
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
