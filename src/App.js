@@ -234,9 +234,14 @@ const App = () => {
       return;
     }
 
+    // Adicionado console.log para verificar a disponibilidade das bibliotecas
+    console.log("Verificando jsPDF:", typeof window.jspdf);
+    console.log("Verificando html2canvas:", typeof window.html2canvas);
+
     if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
       console.error("Bibliotecas jsPDF ou html2canvas não carregadas. Certifique-se de que as tags <script> estão no index.html.");
-      alert("Erro: As bibliotecas de PDF não foram carregadas. Por favor, recarregue a página e verifique a conexão.");
+      alert("Erro: As bibliotecas de PDF não foram carregadas. Por favor, recarregue a página e verifique a conexão com a internet.");
+      setLoadingPdf(false); // Garante que o estado de loading seja resetado
       return;
     }
 
