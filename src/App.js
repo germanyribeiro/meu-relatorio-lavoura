@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'; // Importado useMemo
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'; // Importado useMemo e useCallback
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
@@ -229,8 +229,11 @@ const App = () => {
     }
   };
 
-  const generatePdfFromReportData = async (reportData, contentRef) => {
+  const generatePdfFromReportData = useCallback(async (reportData, contentRef) => {
     console.log("DEBUG: Função generatePdfFromReportData iniciada.");
+    console.log("DEBUG: Tipo de setLoadingPdf (dentro de useCallback):", typeof setLoadingPdf);
+    console.log("DEBUG: Tipo de setIsPdfMode (dentro de useCallback):", typeof setIsPdfMode);
+    console.log("DEBUG: Tipo de setError (dentro de useCallback):", typeof setError);
 
     if (!contentRef.current) {
       console.error("ERRO: Conteúdo do relatório não encontrado para gerar PDF. contentRef.current é nulo.");
@@ -276,18 +279,18 @@ const App = () => {
             console.error("ERRO: html2canvas gerou um canvas vazio ou inválido.");
             alert("Erro: Não foi possível gerar a imagem do relatório para o PDF. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
             setError("Erro: Falha na captura do conteúdo para PDF. Tente simplificar o relatório.");
-            return; // Sai da função se o canvas for inválido
+            return;
           }
 
           const imgData = canvas.toDataURL('image/png');
           console.log("DEBUG: Tamanho da imgData (base64):", imgData.length);
-          console.log("DEBUG: Início da imgData (base64):", imgData.substring(0, 100)); // Log dos primeiros 100 caracteres
+          console.log("DEBUG: Início da imgData (base64):", imgData.substring(0, 100));
 
-          if (!imgData || imgData.length < 1000) { // Um Data URL PNG válido deve ser maior que isso
+          if (!imgData || imgData.length < 1000) {
             console.error("ERRO: imgData gerada por html2canvas é muito pequena ou inválida.");
             alert("Erro: A imagem para o PDF está vazia ou corrompida. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
             setError("Erro: Imagem para PDF inválida. Tente simplificar o relatório.");
-            return; // Sai da função se imgData for inválida
+            return;
           }
 
           console.log("DEBUG: Iniciando jsPDF...");
@@ -327,7 +330,7 @@ const App = () => {
         }
       });
     }, 100);
-  };
+  }, [setLoadingPdf, setIsPdfMode, setError]); // Dependências para useCallback
 
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
