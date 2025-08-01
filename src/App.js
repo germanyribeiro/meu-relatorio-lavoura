@@ -37,7 +37,7 @@ const App = () => {
     // Fallback para a configuração hardcoded se __firebase_config não estiver disponível ou for inválido
     console.log("DEBUG: Usando configuração do Firebase hardcoded (fallback).");
     return {
-      apiKey: "AIzaSyBwlHn7CommvM6psGiJjwN3AWYemiJ9uj4", // Esta é a chave de API que você forneceu
+      apiKey: "AIzaSyAmsCvmsF1ocsepjyT8xZtKTLpqW-_-ioE", // Esta é a chave de API que você forneceu
       authDomain: "lavourasapp.firebaseapp.com",
       projectId: "lavourasapp",
       storageBucket: "lavourasapp.firebasestorage.app",
