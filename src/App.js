@@ -419,66 +419,67 @@ const App = () => {
     );
   }
 
-  // Se não estiver autenticado, mostra o aplicativo principal
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-2xl shadow-lg border-4 border-green-300 w-full max-w-md text-center">
-          <h1 className="text-3xl font-extrabold text-green-700 mb-6">
-            🌱 Relatórios de Lavouras
-          </h1>
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {isLoginView ? 'Entrar' : 'Cadastre-se'}
-          </h2>
-          <form onSubmit={isLoginView ? handleLogin : handleRegister} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="sr-only">E-mail</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="Seu e-mail"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">Senha</label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Sua senha"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
-              />
-            </div>
-            {authMessage && (
-              <p className={`text-sm ${authMessage.includes('Erro') ? 'text-red-600' : 'text-green-600'} mt-2`}>
-                {authMessage}
-              </p>
-            )}
-            <button
-              type="submit"
-              className="flex items-center justify-center w-full px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
-              disabled={loading}
-            >
-              {loading ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : (
-                isLoginView ? <LogIn className="w-5 h-5 mr-2" /> : <UserPlus className="w-5 h-5 mr-2" />
+  // Se não estiver autenticado, mostra a tela de login/cadastro
+  if (!userId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-2xl shadow-lg border-4 border-green-300 w-full max-w-md text-center">
+            <h1 className="text-3xl font-extrabold text-green-700 mb-6">
+              🌱 Relatórios de Lavouras
+            </h1>
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">
+              {isLoginView ? 'Entrar' : 'Cadastre-se'}
+            </h2>
+            <form onSubmit={isLoginView ? handleLogin : handleRegister} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="sr-only">E-mail</label>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Seu e-mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="sr-only">Senha</label>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
+                />
+              </div>
+              {authMessage && (
+                <p className={`text-sm ${authMessage.includes('Erro') ? 'text-red-600' : 'text-green-600'} mt-2`}>
+                  {authMessage}
+                </p>
               )}
-              {isLoginView ? 'Entrar' : 'Cadastrar'}
+              <button
+                type="submit"
+                className="flex items-center justify-center w-full px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : (
+                  isLoginView ? <LogIn className="w-5 h-5 mr-2" /> : <UserPlus className="w-5 h-5 mr-2" />
+                )}
+                {isLoginView ? 'Entrar' : 'Cadastrar'}
+              </button>
+            </form>
+            <button
+              onClick={() => setIsLoginView(!isLoginView)}
+              className="mt-4 text-blue-600 hover:underline text-sm"
+            >
+              {isLoginView ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entrar'}
             </button>
-          </form>
-          <button
-            onClick={() => setIsLoginView(!isLoginView)}
-            className="mt-4 text-blue-600 hover:underline text-sm"
-          >
-            {isLoginView ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Entrar'}
-          </button>
+          </div>
         </div>
-      </div>
-    );
+      );
   }
 
   // Se autenticado, mostra o aplicativo principal
