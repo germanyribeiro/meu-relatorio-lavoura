@@ -11,7 +11,7 @@ import {
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2 } from 'lucide-react';
 
 import PropTypes from 'prop-types';
 
@@ -293,7 +293,7 @@ const App = () => {
       const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
       const margin = 20; // Margem de 20mm (2cm) de cada lado
       let yPos = margin; // Posição Y inicial
-      const lineHeight = 5; // Espaçamento de linha base em mm (aproximadamente 10pt)
+      const lineHeight = 4.5; // Espaçamento de linha em mm (ajustado para ser mais compacto)
       const maxLineWidth = 210 - 2 * margin; // Largura máxima da linha do texto
 
       const addPageIfNeeded = () => {
@@ -310,12 +310,12 @@ const App = () => {
       addPageIfNeeded();
 
       // Seção: Informações da Visita
-      pdf.setFontSize(12); // Títulos de seção
+      pdf.setFontSize(11); // Títulos de seção (ajustado para 11pt)
       pdf.text("Informações da Visita", margin, yPos);
       yPos += lineHeight * 1.5;
       addPageIfNeeded();
 
-      pdf.setFontSize(10); // Texto do corpo
+      pdf.setFontSize(9); // Texto do corpo (ajustado para 9pt)
       const fields = [
         { label: "Nome da Propriedade:", value: reportData.propriedade },
         { label: "Nome da Lavoura:", value: reportData.lavoura },
@@ -336,12 +336,12 @@ const App = () => {
       addPageIfNeeded();
 
       // Seção: Observações Técnicas
-      pdf.setFontSize(12); // Títulos de seção
+      pdf.setFontSize(11); // Títulos de seção (ajustado para 11pt)
       pdf.text("Observações Técnicas", margin, yPos);
       yPos += lineHeight * 1.5;
       addPageIfNeeded();
 
-      pdf.setFontSize(10); // Texto do corpo
+      pdf.setFontSize(9); // Texto do corpo (ajustado para 9pt)
       const obsFields = [
         { label: "Estágio Fenológico Observado:", value: reportData.estagioFenologico },
         { label: "Observações Gerais da Lavoura:", value: reportData.observacoesGerais },
@@ -363,7 +363,7 @@ const App = () => {
 
       // Seção: Fotos
       if (reportData.fotos && reportData.fotos.length > 0) {
-        pdf.setFontSize(12); // Título de seção
+        pdf.setFontSize(10); // Título de subseção (ajustado para 10pt)
         pdf.text("Fotos", margin, yPos);
         yPos += lineHeight * 1.5;
         addPageIfNeeded();
@@ -383,16 +383,13 @@ const App = () => {
 
           // Adicionar imagem
           try {
-            // jsPDF addImage pode ter problemas com Data URLs muito longas ou malformadas.
-            // É mais robusto se a imagem já for um Blob ou URL de imagem.
-            // Para Data URLs, é importante que estejam corretas.
             pdf.addImage(photoUrl, 'PNG', currentX, yPos, imgWidth, imgHeight);
           } catch (imgError) {
             console.error("Erro ao adicionar imagem ao PDF:", imgError);
             // Opcional: Adicionar um texto de placeholder se a imagem falhar
             pdf.setFontSize(8);
             pdf.text("Erro na imagem", currentX, yPos + imgHeight / 2, { align: 'center' });
-            pdf.setFontSize(10); // Resetar fonte
+            pdf.setFontSize(9); // Resetar fonte para o corpo
           }
           currentX += imgWidth + imgMargin;
         }
@@ -414,6 +411,29 @@ const App = () => {
       console.log("DEBUG: Geração de PDF finalizada (limpeza de estados).");
     }
   }, []);
+
+  // Nova função para compartilhar o relatório
+  const handleShareReport = useCallback(async (reportData) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Relatório de Lavoura: ${reportData.propriedade} - ${reportData.lavoura}`,
+          text: `Confira o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.`,
+          url: window.location.href // Compartilha o URL do aplicativo
+        });
+        console.log('Relatório compartilhado com sucesso!');
+      } catch (error) {
+        console.error('Erro ao compartilhar o relatório:', error);
+        // Não usar alert(), mas logar para depuração
+        console.log('Não foi possível compartilhar o relatório. Erro:', error.message);
+      }
+    } else {
+      console.log('Web Share API não suportada neste navegador.');
+      // Não usar alert(), mas logar para o usuário
+      console.log('O PDF foi gerado e baixado. Você pode compartilhá-lo manualmente.');
+    }
+  }, []);
+
 
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
@@ -555,7 +575,7 @@ const App = () => {
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             isEditing={view === 'edit'}
             onGeneratePdf={generatePdfFromReportData}
-            openPhotoModal={openPhotoModal}
+            onShareReport={handleShareReport} // Passa a função de compartilhamento
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
@@ -568,7 +588,7 @@ const App = () => {
             report={currentReport}
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
-            openPhotoModal={openPhotoModal}
+            onShareReport={handleShareReport} // Passa a função de compartilhamento
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
@@ -656,7 +676,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -714,6 +734,10 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
     // Passamos apenas os dados do formulário, pois a geração agora é baseada em texto
     setLoadingPdf(true); // Ativa o estado de carregamento do PDF
     await onGeneratePdf(formData, null, setLoadingPdf, setIsPdfMode, setError);
+  };
+
+  const handleShareClick = () => {
+    onShareReport(formData); // Chama a função de compartilhamento
   };
 
   return (
@@ -857,25 +881,24 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
-            {!isPdfMode && ( // isPdfMode é false aqui, então os botões aparecem
-              <>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current.click()}
-                  className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
-                >
-                  <PlusCircle className="w-5 h-5 mr-2" />
-                  Adicionar Foto do Dispositivo
-                </button>
-              </>
-            )}
+            {/* isPdfMode é false aqui, então os botões aparecem */}
+            <>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
+              >
+                <PlusCircle className="w-5 h-5 mr-2" />
+                Adicionar Foto do Dispositivo
+              </button>
+            </>
             <div className={`
               grid gap-4
               grid-cols-2 sm:grid-cols-3 md:grid-cols-4
@@ -895,16 +918,15 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
                     }}
                   />
-                  {!isPdfMode && ( // isPdfMode é false aqui, então o botão de remover aparece
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePhoto(index)}
-                      className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                      aria-label="Remover foto"
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </button>
-                  )}
+                  {/* isPdfMode é false aqui, então o botão de remover aparece */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhoto(index)}
+                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    aria-label="Remover foto"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -930,11 +952,12 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
             {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
           </button>
           <button
-            type="submit"
-            className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
+            type="button"
+            onClick={handleShareClick}
+            className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105"
           >
-            <Save className="w-5 h-5 mr-2" />
-            Salvar Relatório
+            <Share2 className="w-5 h-5 mr-2" />
+            Compartilhar
           </button>
         </div>
       </form>
@@ -948,6 +971,7 @@ ReportForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
+  onShareReport: PropTypes.func.isRequired, // Adiciona propType para a função de compartilhamento
   openPhotoModal: PropTypes.func.isRequired,
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
@@ -956,12 +980,16 @@ ReportForm.propTypes = {
   setError: PropTypes.func.isRequired, 
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
+const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
   const reportContentRef = useRef(null); // Não é mais usado para geração de PDF, mas é mantido para o layout da tela
 
   const handleGeneratePdfClick = async () => {
     setLoadingPdf(true); // Ativa o estado de carregamento do PDF
     await onGeneratePdf(report, null, setLoadingPdf, setIsPdfMode, setError);
+  };
+
+  const handleShareClick = () => {
+    onShareReport(report); // Chama a função de compartilhamento
   };
 
   return (
@@ -1074,6 +1102,14 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
           {loadingPdf ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
           {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
         </button>
+        <button
+          type="button"
+          onClick={handleShareClick}
+          className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105"
+        >
+          <Share2 className="w-5 h-5 mr-2" />
+          Compartilhar
+        </button>
       </div>
     </div>
   );
@@ -1084,6 +1120,7 @@ ReportView.propTypes = {
   report: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
+  onShareReport: PropTypes.func.isRequired, // Adiciona propType para a função de compartilhamento
   openPhotoModal: PropTypes.func.isRequired,
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
