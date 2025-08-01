@@ -20,7 +20,7 @@ const App = () => {
   
   // Usando useMemo para memorizar firebaseConfig e evitar o aviso do ESLint
   const firebaseConfig = useMemo(() => ({
-    apiKey: "AIzaSyBwlHn7CommvM6psGiXjwN3AWYemiJ9uj4",
+    apiKey: "AIzaSyBwlHn7CommvM6psGiJjwN3AWYemiJ9uj4",
     authDomain: "lavourasapp.firebaseapp.com",
     projectId: "lavourasapp",
     storageBucket: "lavourasapp.firebasestorage.app",
@@ -42,6 +42,18 @@ const App = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(''); // Estado para a foto selecionada no modal
   const [isPdfMode, setIsPdfMode] = useState(false); // Novo estado para controlar o modo de geração de PDF
   const [loadingPdf, setLoadingPdf] = useState(false); // Movido para o componente App
+
+  // Referências para as funções de atualização de estado para garantir acesso estável
+  const setLoadingPdfRef = useRef();
+  const setIsPdfModeRef = useRef();
+  const setErrorRef = useRef();
+
+  // Atualiza as referências sempre que as funções de estado mudam (são estáveis, mas para garantir)
+  useEffect(() => {
+    setLoadingPdfRef.current = setLoadingPdf;
+    setIsPdfModeRef.current = setIsPdfMode;
+    setErrorRef.current = setError;
+  }, [setLoadingPdf, setIsPdfMode, setError]);
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
@@ -231,14 +243,25 @@ const App = () => {
 
   const generatePdfFromReportData = useCallback(async (reportData, contentRef) => {
     console.log("DEBUG: Função generatePdfFromReportData iniciada.");
-    console.log("DEBUG: Tipo de setLoadingPdf (dentro de useCallback):", typeof setLoadingPdf);
-    console.log("DEBUG: Tipo de setIsPdfMode (dentro de useCallback):", typeof setIsPdfMode);
-    console.log("DEBUG: Tipo de setError (dentro de useCallback):", typeof setError);
+    console.log("DEBUG: Tipo de setLoadingPdfRef.current (dentro de useCallback):", typeof setLoadingPdfRef.current);
+    console.log("DEBUG: Tipo de setIsPdfModeRef.current (dentro de useCallback):", typeof setIsPdfModeRef.current);
+    console.log("DEBUG: Tipo de setErrorRef.current (dentro de useCallback):", typeof setErrorRef.current);
+
+    // Usa as referências para as funções de atualização de estado
+    const currentSetLoadingPdf = setLoadingPdfRef.current;
+    const currentSetIsPdfMode = setIsPdfModeRef.current;
+    const currentSetError = setErrorRef.current;
+
+    if (typeof currentSetLoadingPdf !== 'function' || typeof currentSetIsPdfMode !== 'function' || typeof currentSetError !== 'function') {
+      console.error("ERRO CRÍTICO: Funções de atualização de estado (setLoadingPdf, setIsPdfMode, setError) não são funções válidas via ref.");
+      alert("Erro interno: Funções de estado não disponíveis. Por favor, recarregue a página.");
+      return;
+    }
 
     if (!contentRef.current) {
       console.error("ERRO: Conteúdo do relatório não encontrado para gerar PDF. contentRef.current é nulo.");
-      setError("Erro: Não foi possível encontrar o conteúdo do relatório para gerar o PDF.");
-      setLoadingPdf(false);
+      currentSetError("Erro: Não foi possível encontrar o conteúdo do relatório para gerar o PDF.");
+      currentSetLoadingPdf(false);
       return;
     }
 
@@ -248,13 +271,13 @@ const App = () => {
     if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
       console.error("ERRO CRÍTICO: Bibliotecas jsPDF ou html2canvas não carregadas. Verifique seu public/index.html e a conexão de internet.");
       alert("Erro: As bibliotecas de PDF (jsPDF/html2canvas) não foram carregadas. Por favor, recarregue a página, verifique sua conexão e o console do navegador.");
-      setError("Erro: As bibliotecas de PDF não foram carregadas. Verifique o console do navegador.");
-      setLoadingPdf(false);
+      currentSetError("Erro: As bibliotecas de PDF não foram carregadas. Verifique o console do navegador.");
+      currentSetLoadingPdf(false);
       return;
     }
 
-    setLoadingPdf(true);
-    setIsPdfMode(true);
+    currentSetLoadingPdf(true);
+    currentSetIsPdfMode(true);
     
     setTimeout(() => {
       requestAnimationFrame(async () => {
@@ -278,7 +301,7 @@ const App = () => {
           if (!canvas || canvas.width === 0 || canvas.height === 0) {
             console.error("ERRO: html2canvas gerou um canvas vazio ou inválido.");
             alert("Erro: Não foi possível gerar a imagem do relatório para o PDF. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
-            setError("Erro: Falha na captura do conteúdo para PDF. Tente simplificar o relatório.");
+            currentSetError("Erro: Falha na captura do conteúdo para PDF. Tente simplificar o relatório.");
             return;
           }
 
@@ -289,7 +312,7 @@ const App = () => {
           if (!imgData || imgData.length < 1000) {
             console.error("ERRO: imgData gerada por html2canvas é muito pequena ou inválida.");
             alert("Erro: A imagem para o PDF está vazia ou corrompida. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
-            setError("Erro: Imagem para PDF inválida. Tente simplificar o relatório.");
+            currentSetError("Erro: Imagem para PDF inválida. Tente simplificar o relatório.");
             return;
           }
 
@@ -318,19 +341,19 @@ const App = () => {
         } catch (error) {
           console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
           alert("Erro ao gerar PDF. Por favor, verifique o console do navegador para mais detalhes.");
-          setError(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
+          currentSetError(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
         } finally {
           if (document.body.contains(tempDiv)) {
             document.body.removeChild(tempDiv);
             console.log("DEBUG: tempDiv removido do DOM.");
           }
-          setIsPdfMode(false);
-          setLoadingPdf(false);
+          currentSetIsPdfMode(false);
+          currentSetLoadingPdf(false);
           console.log("DEBUG: Geração de PDF finalizada (limpeza de estados).");
         }
       });
     }, 100);
-  }, [setLoadingPdf, setIsPdfMode, setError]); // Dependências para useCallback
+  }, []); // Array de dependências vazio pois as referências são estáveis
 
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
