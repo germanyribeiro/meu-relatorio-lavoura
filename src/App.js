@@ -41,6 +41,7 @@ const App = () => {
   const [showPhotoModal, setShowPhotoModal] = useState(false); // Estado para controlar a visibilidade do modal de fotos
   const [selectedPhoto, setSelectedPhoto] = useState(''); // Estado para a foto selecionada no modal
   const [isPdfMode, setIsPdfMode] = useState(false); // Novo estado para controlar o modo de geração de PDF
+  const [loadingPdf, setLoadingPdf] = useState(false); // Movido para o componente App
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
@@ -229,7 +230,7 @@ const App = () => {
   };
 
   const generatePdfFromReportData = async (reportData, contentRef) => {
-    console.log("DEBUG: Função generatePdfFromReportData iniciada."); // Log de início da função
+    console.log("DEBUG: Função generatePdfFromReportData iniciada.");
 
     if (!contentRef.current) {
       console.error("ERRO: Conteúdo do relatório não encontrado para gerar PDF. contentRef.current é nulo.");
@@ -238,7 +239,6 @@ const App = () => {
       return;
     }
 
-    // Adicionado console.log para verificar a disponibilidade das bibliotecas
     console.log("DEBUG: Verificando jsPDF:", typeof window.jspdf);
     console.log("DEBUG: Verificando html2canvas:", typeof window.html2canvas);
 
@@ -246,71 +246,87 @@ const App = () => {
       console.error("ERRO CRÍTICO: Bibliotecas jsPDF ou html2canvas não carregadas. Verifique seu public/index.html e a conexão de internet.");
       alert("Erro: As bibliotecas de PDF (jsPDF/html2canvas) não foram carregadas. Por favor, recarregue a página, verifique sua conexão e o console do navegador.");
       setError("Erro: As bibliotecas de PDF não foram carregadas. Verifique o console do navegador.");
-      setLoadingPdf(false); // Garante que o estado de loading seja resetado
+      setLoadingPdf(false);
       return;
     }
 
     setLoadingPdf(true);
-    setIsPdfMode(true); // Define o modo PDF como true antes de gerar o PDF
+    setIsPdfMode(true);
     
-    // Usa requestAnimationFrame para garantir que o DOM seja atualizado antes da captura
-    requestAnimationFrame(async () => {
-      const screenWidth = window.innerWidth;
-      // Ajusta a escala para html2canvas: menor para dispositivos móveis, maior para desktop
-      const scale = screenWidth < 768 ? 1.5 : 2; 
+    setTimeout(() => {
+      requestAnimationFrame(async () => {
+        const screenWidth = window.innerWidth;
+        const scale = screenWidth < 768 ? 1.5 : 2; 
 
-      // Cria o tempDiv e clona o conteúdo *dentro* do requestAnimationFrame
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.overflow = 'hidden';
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.overflow = 'hidden';
 
-      const clonedContent = contentRef.current.cloneNode(true);
-      tempDiv.appendChild(clonedContent);
-      document.body.appendChild(tempDiv);
+        const clonedContent = contentRef.current.cloneNode(true);
+        tempDiv.appendChild(clonedContent);
+        document.body.appendChild(tempDiv);
 
-      try {
-        console.log("DEBUG: Iniciando html2canvas...");
-        const canvas = await window.html2canvas(clonedContent, { scale: scale }); // Usa a escala dinâmica
-        console.log("DEBUG: html2canvas concluído. Canvas gerado:", canvas);
-        const imgData = canvas.toDataURL('image/png');
+        try {
+          console.log("DEBUG: Iniciando html2canvas...");
+          const canvas = await window.html2canvas(clonedContent, { scale: scale });
+          console.log("DEBUG: html2canvas concluído. Canvas gerado:", canvas);
+          
+          if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            console.error("ERRO: html2canvas gerou um canvas vazio ou inválido.");
+            alert("Erro: Não foi possível gerar a imagem do relatório para o PDF. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
+            setError("Erro: Falha na captura do conteúdo para PDF. Tente simplificar o relatório.");
+            return; // Sai da função se o canvas for inválido
+          }
 
-        console.log("DEBUG: Iniciando jsPDF...");
-        const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210;
-        const pageHeight = 297;
-        const imgHeight = canvas.height * imgWidth / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
+          const imgData = canvas.toDataURL('image/png');
+          console.log("DEBUG: Tamanho da imgData (base64):", imgData.length);
+          console.log("DEBUG: Início da imgData (base64):", imgData.substring(0, 100)); // Log dos primeiros 100 caracteres
 
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+          if (!imgData || imgData.length < 1000) { // Um Data URL PNG válido deve ser maior que isso
+            console.error("ERRO: imgData gerada por html2canvas é muito pequena ou inválida.");
+            alert("Erro: A imagem para o PDF está vazia ou corrompida. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
+            setError("Erro: Imagem para PDF inválida. Tente simplificar o relatório.");
+            return; // Sai da função se imgData for inválida
+          }
 
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
+          console.log("DEBUG: Iniciando jsPDF...");
+          const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+          const imgWidth = 210;
+          const pageHeight = 297;
+          const imgHeight = canvas.height * imgWidth / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+
           pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
-        }
 
-        const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
-        console.log("DEBUG: PDF object criado. Tentando salvar o PDF com nome:", filename);
-        pdf.save(filename);
-        console.log("DEBUG: PDF salvo com sucesso (ou tentativa de download iniciada).");
-      } catch (error) {
-        console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
-        alert("Erro ao gerar PDF. Por favor, verifique o console do navegador para mais detalhes.");
-        setError(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
-      } finally {
-        if (document.body.contains(tempDiv)) {
-          document.body.removeChild(tempDiv);
-          console.log("DEBUG: tempDiv removido do DOM.");
+          while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+
+          const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
+          console.log("DEBUG: PDF object criado. Tentando salvar o PDF com nome:", filename);
+          pdf.save(filename);
+          console.log("DEBUG: PDF salvo com sucesso (ou tentativa de download iniciada).");
+        } catch (error) {
+          console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
+          alert("Erro ao gerar PDF. Por favor, verifique o console do navegador para mais detalhes.");
+          setError(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
+        } finally {
+          if (document.body.contains(tempDiv)) {
+            document.body.removeChild(tempDiv);
+            console.log("DEBUG: tempDiv removido do DOM.");
+          }
+          setIsPdfMode(false);
+          setLoadingPdf(false);
+          console.log("DEBUG: Geração de PDF finalizada (limpeza de estados).");
         }
-        setIsPdfMode(false); // Define o modo PDF como false após a geração
-        setLoadingPdf(false); // Garante que o estado de loading seja resetado
-        console.log("DEBUG: Geração de PDF finalizada (limpeza de estados).");
-      }
-    }); // Fim do requestAnimationFrame
+      });
+    }, 100);
   };
 
   const openPhotoModal = (photoUrl) => {
@@ -454,6 +470,8 @@ const App = () => {
             onGeneratePdf={generatePdfFromReportData}
             openPhotoModal={openPhotoModal}
             isPdfMode={isPdfMode}
+            loadingPdf={loadingPdf}
+            setLoadingPdf={setLoadingPdf}
           />
         )}
         {view === 'view' && currentReport && (
@@ -463,6 +481,8 @@ const App = () => {
             onGeneratePdf={generatePdfFromReportData}
             openPhotoModal={openPhotoModal}
             isPdfMode={isPdfMode}
+            loadingPdf={loadingPdf}
+            setLoadingPdf={setLoadingPdf}
           />
         )}
       </main>
@@ -545,7 +565,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal, isPdfMode }) => {
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf }) => {
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -561,7 +581,6 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
     ...report, // Preenche se estiver editando
   });
 
-  const [loadingPdf, setLoadingPdf] = useState(false);
   const reportContentRef = useRef(null);
   const fileInputRef = useRef(null); // Referência para o input de arquivo
 
@@ -599,10 +618,9 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
   };
 
   const handleGeneratePdfClick = async () => {
-    console.log("DEBUG: Botão Gerar PDF clicado."); // Log de clique no botão
+    console.log("DEBUG: Botão Gerar PDF clicado no ReportForm.");
     setLoadingPdf(true);
     await onGeneratePdf(formData, reportContentRef);
-    // setLoadingPdf(false); // Removido para evitar redundância, já é tratado no finally da onGeneratePdf
   };
 
   return (
@@ -612,8 +630,6 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
         {isEditing ? 'Editar Relatório' : 'Novo Relatório'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Conteúdo do formulário que será capturado para o PDF */}
-        {/* Ajuste de margens para responsividade: p-4 em telas pequenas, sm:p-6, md:p-12, lg:px-28 lg:py-20 em telas maiores */}
         <div ref={reportContentRef} className="p-4 sm:p-6 md:p-12 lg:px-28 lg:py-20 border border-gray-200 rounded-xl bg-gray-50 space-y-4">
           <h3 className="text-xl font-bold text-green-700 mb-4 text-center">Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -664,7 +680,6 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
               />
             </div>
-            {/* Novo campo: Responsável Técnico */}
             <div>
               <label htmlFor="responsavelTecnico" className="block text-lg font-semibold text-gray-700 mb-1">Responsável Técnico:</label>
               <input
@@ -744,7 +759,6 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
-            {/* Condicionalmente renderiza o botão e input de foto */}
             {!isPdfMode && (
               <>
                 <input
@@ -752,11 +766,11 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                   accept="image/*"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  className="hidden" // Esconde o input padrão
+                  className="hidden"
                 />
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current.click()} // Aciona o clique no input oculto
+                  onClick={() => fileInputRef.current.click()}
                   className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
                 >
                   <PlusCircle className="w-5 h-5 mr-2" />
@@ -770,14 +784,13 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                   <img
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
-                    className="w-full h-full object-cover cursor-pointer" // Adicionado cursor-pointer
-                    onClick={() => openPhotoModal(photoUrl)} // Abre a foto no modal
+                    className="w-full h-full object-cover cursor-pointer"
+                    onClick={() => openPhotoModal(photoUrl)}
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
                     }}
                   />
-                  {/* Oculta o botão de remover foto no modo PDF */}
                   {!isPdfMode && (
                     <button
                       type="button"
@@ -792,7 +805,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
               ))}
             </div>
           </div>
-        </div> {/* Fim do div com ref */}
+        </div>
 
         <div className="flex flex-wrap justify-center md:justify-end gap-4 mt-8">
           <button
@@ -800,7 +813,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
             onClick={onCancel}
             className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition duration-300 ease-in-out text-sm sm:text-base text-center"
           >
-            <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" /> {/* Ajuste de margem para ícone */}
+            <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" />
             Cancelar
           </button>
           <button
@@ -825,25 +838,24 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
   );
 };
 
-// Adicionando PropTypes para ReportForm
 ReportForm.propTypes = {
-  report: PropTypes.object, // Pode ser nulo para novos relatórios
+  report: PropTypes.object,
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
   openPhotoModal: PropTypes.func.isRequired,
-  isPdfMode: PropTypes.bool.isRequired, // Adicionado nova propType
+  isPdfMode: PropTypes.bool.isRequired,
+  loadingPdf: PropTypes.bool.isRequired,
+  setLoadingPdf: PropTypes.func.isRequired,
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode }) => { // Recebe isPdfMode
+const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf }) => {
   const reportContentRef = useRef(null);
-  const [loadingPdf, setLoadingPdf] = useState(false);
 
   const handleGeneratePdfClick = async () => {
     setLoadingPdf(true);
     await onGeneratePdf(report, reportContentRef);
-    setLoadingPdf(false);
   };
 
   return (
@@ -852,7 +864,6 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
         <Eye className="w-6 h-6 mr-2" />
         Detalhes do Relatório
       </h2>
-      {/* Ajuste de margens para responsividade: p-4 em telas pequenas, sm:p-6, md:p-12, lg:px-28 lg:py-20 em telas maiores */}
       <div ref={reportContentRef} className="p-4 sm:p-6 md:p-12 lg:px-28 lg:py-20 border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4">
         <h3 className="text-xl font-bold text-green-700 mb-4 text-center">Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -872,7 +883,6 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
             <p className="text-lg font-semibold text-gray-700 mb-1">Condições Climáticas:</p>
             <p className="text-xl text-gray-900 font-semibold">{report.condicoesClimaticas}</p>
           </div>
-          {/* Novo campo: Responsável Técnico */}
           <div>
             <p className="text-lg font-semibold text-gray-700 mb-1">Responsável Técnico:</p>
             <p className="text-xl text-gray-900 font-semibold">{report.responsavelTecnico}</p>
@@ -917,8 +927,8 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
                   <img
                     src={photoUrl}
                     alt={`Foto da lavoura ${index + 1}`}
-                    className="w-full h-full object-cover cursor-pointer" // Adicionado cursor-pointer
-                    onClick={() => openPhotoModal(photoUrl)} // Abre a foto no modal
+                    className="w-full h-full object-cover cursor-pointer"
+                    onClick={() => openPhotoModal(photoUrl)}
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
@@ -936,7 +946,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
           onClick={onCancel}
           className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition duration-300 ease-in-out text-sm sm:text-base text-center"
         >
-          <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" /> {/* Ajuste de margem para ícone */}
+          <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" />
           Voltar para a Lista
         </button>
         <button
@@ -953,31 +963,30 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
   );
 };
 
-// Adicionando PropTypes para ReportView
 ReportView.propTypes = {
   report: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
   openPhotoModal: PropTypes.func.isRequired,
-  isPdfMode: PropTypes.bool.isRequired, // Adicionado nova propType
+  isPdfMode: PropTypes.bool.isRequired,
+  loadingPdf: PropTypes.bool.isRequired,
+  setLoadingPdf: PropTypes.func.isRequired,
 };
 
-// Novo componente de Modal para exibir a foto em tela cheia
 const PhotoModal = ({ imageUrl, onClose }) => {
   useEffect(() => {
-    // Desabilita a rolagem do corpo quando o modal está aberto
     document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = 'unset'; // Reabilita a rolagem ao fechar
+      document.body.style.overflow = 'unset';
     };
   }, []);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
-      onClick={onClose} // Fecha o modal ao clicar fora da imagem
+      onClick={onClose}
     >
-      <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}> {/* Impede que o clique na imagem feche o modal */}
+      <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
         <img
           src={imageUrl}
           alt="Visualização da Foto"
@@ -999,11 +1008,9 @@ const PhotoModal = ({ imageUrl, onClose }) => {
   );
 };
 
-// Adicionando PropTypes para PhotoModal
 PhotoModal.propTypes = {
   imageUrl: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
 };
-
 
 export default App;
