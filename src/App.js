@@ -819,7 +819,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
           </div>
 
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
-            <h3 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-base' : ''}`}>
+            <h3 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-sm' : ''}`}>
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
@@ -993,7 +993,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
 
         {report.fotos && report.fotos.length > 0 && (
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
-            <h4 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-base' : ''}`}>
+            <h4 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-xs' : ''}`}>
               <Camera className="w-5 h-5 mr-2" />
               Fotos
             </h4>
