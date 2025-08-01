@@ -692,13 +692,13 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
       <form onSubmit={handleSubmit} className="space-y-6">
         <div ref={reportContentRef} className={`
           p-4 sm:p-6
-          ${isPdfMode ? 'px-8 py-8 text-sm' : 'md:p-12 lg:px-28 lg:py-20'} 
+          ${isPdfMode ? 'px-8 py-8 text-xs' : 'md:p-12 lg:px-28 lg:py-20'} 
           border border-gray-200 rounded-xl bg-gray-50 space-y-4
         `}>
-          <h3 className={`text-xl font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-base' : ''}`}>Informações da Visita</h3>
+          <h3 className={`text-xl font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="propriedade" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Nome da Propriedade:</label>
+              <label htmlFor="propriedade" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Propriedade:</label>
               <input
                 type="text"
                 id="propriedade"
@@ -706,11 +706,11 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 value={formData.propriedade}
                 onChange={handleChange}
                 required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
               />
             </div>
             <div>
-              <label htmlFor="lavoura" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Nome da Lavoura:</label>
+              <label htmlFor="lavoura" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Lavoura:</label>
               <input
                 type="text"
                 id="lavoura"
@@ -718,11 +718,11 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 value={formData.lavoura}
                 onChange={handleChange}
                 required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
               />
             </div>
             <div>
-              <label htmlFor="dataVisita" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Data da Visita:</label>
+              <label htmlFor="dataVisita" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Data da Visita:</label>
               <input
                 type="date"
                 id="dataVisita"
@@ -730,91 +730,91 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 value={formData.dataVisita}
                 onChange={handleChange}
                 required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
               />
             </div>
             <div>
-              <label htmlFor="condicoesClimaticas" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Condições Climáticas:</label>
+              <label htmlFor="condicoesClimaticas" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Condições Climáticas:</label>
               <input
                 type="text"
                 id="condicoesClimaticas"
                 name="condicoesClimaticas"
                 value={formData.condicoesClimaticas}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
               />
             </div>
             <div>
-              <label htmlFor="responsavelTecnico" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Responsável Técnico:</label>
+              <label htmlFor="responsavelTecnico" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Responsável Técnico:</label>
               <input
                 type="text"
                 id="responsavelTecnico"
                 name="responsavelTecnico"
                 value={formData.responsavelTecnico}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
               />
             </div>
           </div>
 
-          <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-lg' : ''}`}>Observações Técnicas</h3>
+          <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Observações Técnicas</h3>
           <div>
-            <label htmlFor="estagioFenologico" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Estágio Fenológico Observado:</label>
+            <label htmlFor="estagioFenologico" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Estágio Fenológico Observado:</label>
             <input
               type="text"
               id="estagioFenologico"
               name="estagioFenologico"
               value={formData.estagioFenologico}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
             />
           </div>
 
           <div>
-            <label htmlFor="observacoesGerais" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Observações Gerais da Lavoura:</label>
+            <label htmlFor="observacoesGerais" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Observações Gerais da Lavoura:</label>
             <textarea
               id="observacoesGerais"
               name="observacoesGerais"
               rows="3"
               value={formData.observacoesGerais}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
             ></textarea>
           </div>
 
           <div>
-            <label htmlFor="problemasIdentificados" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Problemas Identificados (Pragas, Doenças, Daninhas, etc.):</label>
+            <label htmlFor="problemasIdentificados" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Problemas Identificados (Pragas, Doenças, Daninhas, etc.):</label>
             <textarea
               id="problemasIdentificados"
               name="problemasIdentificados"
               rows="4"
               value={formData.problemasIdentificados}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
             ></textarea>
           </div>
 
           <div>
-            <label htmlFor="orientacoesTecnicas" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Orientações Técnicas Fornecidas:</label>
+            <label htmlFor="orientacoesTecnicas" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Orientações Técnicas Fornecidas:</label>
             <textarea
               id="orientacoesTecnicas"
               name="orientacoesTecnicas"
               rows="4"
               value={formData.orientacoesTecnicas}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
             ></textarea>
           </div>
 
           <div>
-            <label htmlFor="potencialProdutivo" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Padrão de Qualidade e Potencial Produtivo Estimado:</label>
+            <label htmlFor="potencialProdutivo" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Padrão de Qualidade e Potencial Produtivo Estimado:</label>
             <textarea
               id="potencialProdutivo"
               name="potencialProdutivo"
               rows="3"
               value={formData.potencialProdutivo}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-sm' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
             ></textarea>
           </div>
 
@@ -938,57 +938,57 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
       </h2>
       <div ref={reportContentRef} className={`
           p-4 sm:p-6
-          ${isPdfMode ? 'px-8 py-8 text-sm' : 'md:p-12 lg:px-28 lg:py-20'} 
+          ${isPdfMode ? 'px-8 py-8 text-xs' : 'md:p-12 lg:px-28 lg:py-20'} 
           border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
         `}>
-        <h3 className={`text-xl font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-base' : ''}`}>Informações da Visita</h3>
+        <h3 className={`text-xl font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Nome da Propriedade:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.propriedade}</p>
+            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Propriedade:</p>
+            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.propriedade}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Nome da Lavoura:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.lavoura}</p>
+            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Lavoura:</p>
+            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.lavoura}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Data da Visita:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
+            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Data da Visita:</p>
+            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Condições Climáticas:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.condicoesClimaticas}</p>
+            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Condições Climáticas:</p>
+            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.condicoesClimaticas}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Responsável Técnico:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.responsavelTecnico}</p>
+            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Responsável Técnico:</p>
+            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.responsavelTecnico}</p>
           </div>
         </div>
 
-        <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-lg' : ''}`}>Observações Técnicas</h3>
+        <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : ''}`}>Observações Técnicas</h3>
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Estágio Fenológico Observado:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.estagioFenologico}</p>
+          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Estágio Fenológico Observado:</p>
+          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.estagioFenologico}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Observações Gerais da Lavoura:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.observacoesGerais}</p>
+          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Observações Gerais da Lavoura:</p>
+          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.observacoesGerais}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Problemas Identificados:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.problemasIdentificados}</p>
+          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Problemas Identificados:</p>
+          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.problemasIdentificados}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Orientações Técnicas Fornecidas:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.orientacoesTecnicas}</p>
+          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Orientações Técnicas Fornecidas:</p>
+          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.orientacoesTecnicas}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-sm' : 'text-lg'}`}>Padrão de Qualidade e Potencial Produtivo Estimado:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-sm' : 'text-xl'}`}>{report.potencialProdutivo}</p>
+          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Padrão de Qualidade e Potencial Produtivo Estimado:</p>
+          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.potencialProdutivo}</p>
         </div>
 
         {report.fotos && report.fotos.length > 0 && (
