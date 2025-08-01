@@ -338,7 +338,8 @@ const App = () => {
         }
       });
     }, 100);
-  }, [setLoadingPdf, setIsPdfMode, setError]); // Dependências para useCallback
+  }, []); // Dependências para useCallback agora está vazio
+  // Removidas as dependências 'setLoadingPdf', 'setIsPdfMode', 'setError' pois são estáveis.
 
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
@@ -631,7 +632,8 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
   const handleGeneratePdfClick = async () => {
     console.log("DEBUG: Botão Gerar PDF clicado no ReportForm.");
     setLoadingPdf(true); // Usa o setter recebido via prop
-    await onGeneratePdf(formData, reportContentRef, setLoadingPdf, setIsPdfMode, setError); // Passa os setters como argumentos
+    // Passa os setters como argumentos para a função onGeneratePdf
+    await onGeneratePdf(formData, reportContentRef, setLoadingPdf, setIsPdfMode, setError);
   };
 
   return (
@@ -866,7 +868,8 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
 
   const handleGeneratePdfClick = async () => {
     setLoadingPdf(true); // Usa o setter recebido via prop
-    await onGeneratePdf(report, reportContentRef, setLoadingPdf, setIsPdfMode, setError); // Passa os setters como argumentos
+    // Passa os setters como argumentos para a função onGeneratePdf
+    await onGeneratePdf(report, reportContentRef, setLoadingPdf, setIsPdfMode, setError);
   };
 
   return (
