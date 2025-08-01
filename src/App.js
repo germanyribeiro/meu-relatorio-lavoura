@@ -20,31 +20,38 @@ const App = () => {
   
   // Usando useMemo para memorizar firebaseConfig e evitar o aviso do ESLint
   const firebaseConfig = useMemo(() => {
+    let configToUse = null;
     // Tenta usar a configuração fornecida pelo ambiente Canvas
     if (typeof window.__firebase_config !== 'undefined' && window.__firebase_config) {
       try {
         const parsedConfig = JSON.parse(window.__firebase_config);
         // Verifica se a configuração parseada é um objeto válido e não está vazia
         if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) {
-          console.log("DEBUG: Usando configuração do Firebase fornecida pelo ambiente Canvas.");
-          return parsedConfig;
+          console.log("DEBUG: Tentando usar configuração do Firebase fornecida pelo ambiente Canvas.");
+          configToUse = parsedConfig;
         }
       } catch (e) {
         console.error("Erro ao parsear __firebase_config:", e);
-        // Cai para a configuração hardcoded se houver erro no parse
       }
     }
+
     // Fallback para a configuração hardcoded se __firebase_config não estiver disponível ou for inválido
-    console.log("DEBUG: Usando configuração do Firebase hardcoded (fallback).");
-    return {
-      apiKey: "AIzaSyAmsCvmsF1ocsepjyT8xZtKTLpqW-_-ioE", // Esta é a chave de API que você forneceu
-      authDomain: "lavourasapp.firebaseapp.com",
-      projectId: "lavourasapp",
-      storageBucket: "lavourasapp.firebasestorage.app",
-      messagingSenderId: "576349607032",
-      appId: "1:576349607032:web:3a36527be7aaf7ee2ec98d",
-      measurementId: "G-W5CJR02XDX"
-    };
+    if (!configToUse) {
+      console.log("DEBUG: Usando configuração do Firebase hardcoded (fallback).");
+      configToUse = {
+        apiKey: "AIzaSyAmsCvmsF1ocsepjyT8xZtKTLpqW-_-ioE", // Esta é a chave de API que você forneceu
+        authDomain: "lavourasapp.firebaseapp.com",
+        projectId: "lavourasapp",
+        storageBucket: "lavourasapp.firebasestorage.app",
+        messagingSenderId: "576349607032",
+        appId: "1:576349607032:web:3a36527be7aaf7ee2ec98d",
+        measurementId: "G-W5CJR02XDX"
+      };
+    }
+    
+    // **NOVO LOG:** Exibe a configuração final que será usada
+    console.log("DEBUG: Configuração FINAL do Firebase sendo usada:", configToUse);
+    return configToUse;
   }, []); // Array de dependências vazio para garantir que seja criado apenas uma vez
 
   const [db, setDb] = useState(null);
