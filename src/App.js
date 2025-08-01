@@ -310,8 +310,10 @@ const App = () => {
     
     setTimeout(() => {
       requestAnimationFrame(async () => {
+        // Reduzindo a escala para evitar RangeError: Invalid string length
+        // A escala de 0.75 ou 1.0 geralmente é suficiente para boa qualidade e evita problemas de memória.
         const screenWidth = window.innerWidth;
-        const scale = screenWidth < 768 ? 1.5 : 2; 
+        const scale = screenWidth < 768 ? 0.75 : 1.0; // Ajustado para 0.75 em mobile e 1.0 em desktop
 
         const tempDiv = document.createElement('div');
         tempDiv.style.position = 'absolute';
@@ -319,6 +321,7 @@ const App = () => {
         tempDiv.style.overflow = 'hidden';
 
         const clonedContent = contentRef.current.cloneNode(true);
+        clonedContent.style.width = '100%'; // Garante que o conteúdo clonado ocupe a largura total para captura
         tempDiv.appendChild(clonedContent);
         document.body.appendChild(tempDiv);
 
@@ -416,11 +419,10 @@ const App = () => {
     );
   }
 
-  // Se não estiver autenticado, mostra a tela de login/cadastro
-  if (!userId && isAuthReady) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl shadow-lg border-4 border-green-300 w-full max-w-md text-center">
+  // Se não estiver autenticado, mostra o aplicativo principal
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-2xl shadow-lg border-4 border-green-300 w-full max-w-md text-center">
           <h1 className="text-3xl font-extrabold text-green-700 mb-6">
             🌱 Relatórios de Lavouras
           </h1>
@@ -1027,6 +1029,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
   );
 };
 
+// Prop Types for ReportView
 ReportView.propTypes = {
   report: PropTypes.object.isRequired,
   onCancel: PropTypes.func.isRequired,
@@ -1035,8 +1038,8 @@ ReportView.propTypes = {
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
   setLoadingPdf: PropTypes.func.isRequired,
-  setIsPdfMode: PropTypes.func.isRequired, 
-  setError: PropTypes.func.isRequired, 
+  setIsPdfMode: PropTypes.func.isRequired,
+  setError: PropTypes.func.isRequired,
 };
 
 const PhotoModal = ({ imageUrl, onClose }) => {
