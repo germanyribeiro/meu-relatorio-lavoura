@@ -43,8 +43,6 @@ const App = () => {
   const [isPdfMode, setIsPdfMode] = useState(false); // Novo estado para controlar o modo de geração de PDF
   const [loadingPdf, setLoadingPdf] = useState(false); // Movido para o componente App
 
-  // Removidas as referências para as funções de atualização de estado
-
   // Estados para autenticação
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -338,8 +336,7 @@ const App = () => {
         }
       });
     }, 100);
-  }, []); // Dependências para useCallback agora está vazio
-  // Removidas as dependências 'setLoadingPdf', 'setIsPdfMode', 'setError' pois são estáveis.
+  }, [setLoadingPdf, setIsPdfMode, setError]); // Dependências para useCallback
 
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
@@ -484,6 +481,8 @@ const App = () => {
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
+            setIsPdfMode={setIsPdfMode} 
+            setError={setError} 
           />
         )}
         {view === 'view' && currentReport && (
@@ -495,6 +494,8 @@ const App = () => {
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
+            setIsPdfMode={setIsPdfMode} 
+            setError={setError} 
           />
         )}
       </main>
@@ -577,7 +578,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf }) => {
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -861,9 +862,11 @@ ReportForm.propTypes = {
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
   setLoadingPdf: PropTypes.func.isRequired,
+  setIsPdfMode: PropTypes.func.isRequired, 
+  setError: PropTypes.func.isRequired, 
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf }) => {
+const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
   const reportContentRef = useRef(null);
 
   const handleGeneratePdfClick = async () => {
@@ -985,6 +988,8 @@ ReportView.propTypes = {
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
   setLoadingPdf: PropTypes.func.isRequired,
+  setIsPdfMode: PropTypes.func.isRequired, 
+  setError: PropTypes.func.isRequired, 
 };
 
 const PhotoModal = ({ imageUrl, onClose }) => {
