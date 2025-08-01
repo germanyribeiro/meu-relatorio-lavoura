@@ -72,7 +72,7 @@ const App = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
-  const [isLoginView, setIsLoginView] = useState(true);
+  const [isLoginView, setIsLoginView] = true;
 
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
@@ -690,7 +690,11 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
         {isEditing ? 'Editar Relatório' : 'Novo Relatório'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div ref={reportContentRef} className="p-4 sm:p-6 md:p-12 lg:px-28 lg:py-20 border border-gray-200 rounded-xl bg-gray-50 space-y-4">
+        <div ref={reportContentRef} className={`
+          p-4 sm:p-6
+          ${isPdfMode ? 'px-8 py-8' : 'md:p-12 lg:px-28 lg:py-20'} 
+          border border-gray-200 rounded-xl bg-gray-50 space-y-4
+        `}>
           <h3 className="text-xl font-bold text-green-700 mb-4 text-center">Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -926,7 +930,11 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
         <Eye className="w-6 h-6 mr-2" />
         Detalhes do Relatório
       </h2>
-      <div ref={reportContentRef} className="p-4 sm:p-6 md:p-12 lg:px-28 lg:py-20 border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4">
+      <div ref={reportContentRef} className={`
+          p-4 sm:p-6
+          ${isPdfMode ? 'px-8 py-8' : 'md:p-12 lg:px-28 lg:py-20'} 
+          border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
+        `}>
         <h3 className="text-xl font-bold text-green-700 mb-4 text-center">Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
