@@ -65,7 +65,8 @@ const App = () => {
   const [error, setError] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState('');
-  const [isPdfMode, setIsPdfMode] = useState(false);
+  // isPdfMode não é mais necessário para controle de estilo no HTML, mas pode ser útil para o loadingPdf
+  const [isPdfMode, setIsPdfMode] = useState(false); 
   const [loadingPdf, setLoadingPdf] = useState(false);
 
   // Estados para autenticação
@@ -274,114 +275,144 @@ const App = () => {
     }
   };
 
+  // Nova função de geração de PDF baseada em texto
   const generatePdfFromReportData = useCallback(async (reportData, contentRef, setLoadingPdfFunc, setIsPdfModeFunc, setErrorFunc) => {
-    console.log("DEBUG: Função generatePdfFromReportData iniciada.");
-    console.log("DEBUG: Tipo de setLoadingPdfFunc (dentro de useCallback):", typeof setLoadingPdfFunc);
-    console.log("DEBUG: Tipo de setIsPdfModeFunc (dentro de useCallback):", typeof setIsPdfModeFunc);
-    console.log("DEBUG: Tipo de setErrorFunc (dentro de useCallback):", typeof setErrorFunc);
-
-    if (typeof setLoadingPdfFunc !== 'function' || typeof setIsPdfModeFunc !== 'function' || typeof setErrorFunc !== 'function') {
-      console.error("ERRO CRÍTICO: Funções de atualização de estado (setLoadingPdf, setIsPdfMode, setError) não são funções válidas passadas como argumentos.");
-      alert("Erro interno: Funções de estado não disponíveis. Por favor, recarregue a página.");
-      return;
-    }
-
-    if (!contentRef.current) {
-      console.error("ERRO: Conteúdo do relatório não encontrado para gerar PDF. contentRef.current é nulo.");
-      setErrorFunc("Erro: Não foi possível encontrar o conteúdo do relatório para gerar o PDF.");
-      setLoadingPdfFunc(false);
-      return;
-    }
-
-    console.log("DEBUG: Verificando jsPDF:", typeof window.jspdf);
-    console.log("DEBUG: Verificando html2canvas:", typeof window.html2canvas);
-
-    if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-      console.error("ERRO CRÍTICO: Bibliotecas jsPDF ou html2canvas não carregadas. Verifique seu public/index.html e a conexão de internet.");
-      alert("Erro: As bibliotecas de PDF (jsPDF/html2canvas) não foram carregadas. Por favor, recarregue a página, verifique sua conexão e o console do navegador.");
-      setErrorFunc("Erro: As bibliotecas de PDF não foram carregadas. Verifique o console do navegador.");
+    console.log("DEBUG: Função generatePdfFromReportData iniciada (modo texto).");
+    if (typeof window.jspdf === 'undefined') {
+      console.error("ERRO CRÍTICO: Biblioteca jsPDF não carregada. Verifique seu public/index.html e a conexão de internet.");
+      alert("Erro: A biblioteca jsPDF não foi carregada. Por favor, recarregue a página, verifique sua conexão e o console do navegador.");
+      setErrorFunc("Erro: A biblioteca jsPDF não foi carregada. Verifique o console do navegador.");
       setLoadingPdfFunc(false);
       return;
     }
 
     setLoadingPdfFunc(true);
-    setIsPdfModeFunc(true);
-    
-    setTimeout(() => {
-      requestAnimationFrame(async () => {
-        const screenWidth = window.innerWidth;
-        const scale = screenWidth < 768 ? 0.75 : 1.0;
+    setIsPdfModeFunc(true); // Manter para indicar o estado de geração de PDF
 
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.overflow = 'hidden';
+    try {
+      const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+      const margin = 20; // Margem de 20mm (2cm) de cada lado
+      let yPos = margin; // Posição Y inicial
+      const lineHeight = 5; // Espaçamento de linha base em mm (aproximadamente 10pt)
+      const maxLineWidth = 210 - 2 * margin; // Largura máxima da linha do texto
 
-        const clonedContent = contentRef.current.cloneNode(true);
-        clonedContent.style.width = '100%';
-        tempDiv.appendChild(clonedContent);
-        document.body.appendChild(tempDiv);
-
-        try {
-          console.log("DEBUG: Iniciando html2canvas...");
-          const canvas = await window.html2canvas(clonedContent, { scale: scale });
-          console.log("DEBUG: html2canvas concluído. Canvas gerado:", canvas);
-          
-          if (!canvas || canvas.width === 0 || canvas.height === 0) {
-            console.error("ERRO: html2canvas gerou um canvas vazio ou inválido.");
-            alert("Erro: Não foi possível gerar a imagem do relatório para o PDF. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
-            setErrorFunc("Erro: Falha na captura do conteúdo para PDF. Tente simplificar o relatório.");
-            return;
-          }
-
-          const imgData = canvas.toDataURL('image/png');
-          console.log("DEBUG: Tamanho da imgData (base64):", imgData.length);
-          console.log("DEBUG: Início da imgData (base64):", imgData.substring(0, 100));
-
-          if (!imgData || imgData.length < 1000) {
-            console.error("ERRO: imgData gerada por html2canvas é muito pequena ou inválida.");
-            alert("Erro: A imagem para o PDF está vazia ou corrompida. O conteúdo pode ser muito complexo ou ter elementos problemáticos.");
-            setErrorFunc("Erro: Imagem para PDF inválida. Tente simplificar o relatório.");
-            return;
-          }
-
-          console.log("DEBUG: Iniciando jsPDF...");
-          const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-          const imgWidth = 210;
-          const pageHeight = 297;
-          const imgHeight = canvas.height * imgWidth / canvas.width;
-          let heightLeft = imgHeight;
-          let position = 0;
-
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-
-          while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-          }
-
-          const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
-          console.log("DEBUG: PDF object criado. Tentando salvar o PDF com nome:", filename);
-          pdf.save(filename);
-          console.log("DEBUG: PDF salvo com sucesso (ou tentativa de download iniciada).");
-        } catch (error) {
-          console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
-          alert("Erro ao gerar PDF. Por favor, verifique o console do navegador para mais detalhes.");
-          setErrorFunc(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
-        } finally {
-          if (document.body.contains(tempDiv)) {
-            document.body.removeChild(tempDiv);
-            console.log("DEBUG: tempDiv removido do DOM.");
-          }
-          setIsPdfModeFunc(false);
-          setLoadingPdfFunc(false);
-          console.log("DEBUG: Geração de PDF finalizada (limpeza de estados).");
+      const addPageIfNeeded = () => {
+        if (yPos > 297 - margin) { // Se ultrapassar o limite inferior da página
+          pdf.addPage();
+          yPos = margin; // Resetar Y para o topo da nova página
         }
+      };
+
+      // Título Principal
+      pdf.setFontSize(16); // Título do documento
+      pdf.text("Relatório de Acompanhamento de Lavoura", 105, yPos, { align: 'center' });
+      yPos += 10;
+      addPageIfNeeded();
+
+      // Seção: Informações da Visita
+      pdf.setFontSize(12); // Títulos de seção
+      pdf.text("Informações da Visita", margin, yPos);
+      yPos += lineHeight * 1.5;
+      addPageIfNeeded();
+
+      pdf.setFontSize(10); // Texto do corpo
+      const fields = [
+        { label: "Nome da Propriedade:", value: reportData.propriedade },
+        { label: "Nome da Lavoura:", value: reportData.lavoura },
+        { label: "Data da Visita:", value: new Date(reportData.dataVisita).toLocaleDateString('pt-BR') },
+        { label: "Condições Climáticas:", value: reportData.condicoesClimaticas },
+        { label: "Responsável Técnico:", value: reportData.responsavelTecnico }
+      ];
+
+      fields.forEach(field => {
+        const text = `${field.label} ${field.value}`;
+        const splitText = pdf.splitTextToSize(text, maxLineWidth);
+        pdf.text(splitText, margin, yPos);
+        yPos += splitText.length * lineHeight;
+        addPageIfNeeded();
       });
-    }, 100);
+
+      yPos += lineHeight; // Espaçamento extra entre seções
+      addPageIfNeeded();
+
+      // Seção: Observações Técnicas
+      pdf.setFontSize(12); // Títulos de seção
+      pdf.text("Observações Técnicas", margin, yPos);
+      yPos += lineHeight * 1.5;
+      addPageIfNeeded();
+
+      pdf.setFontSize(10); // Texto do corpo
+      const obsFields = [
+        { label: "Estágio Fenológico Observado:", value: reportData.estagioFenologico },
+        { label: "Observações Gerais da Lavoura:", value: reportData.observacoesGerais },
+        { label: "Problemas Identificados (Pragas, Doenças, Daninhas, etc.):", value: reportData.problemasIdentificados },
+        { label: "Orientações Técnicas Fornecidas:", value: reportData.orientacoesTecnicas },
+        { label: "Padrão de Qualidade e Potencial Produtivo Estimado:", value: reportData.potencialProdutivo }
+      ];
+
+      obsFields.forEach(field => {
+        const text = `${field.label} ${field.value}`;
+        const splitText = pdf.splitTextToSize(text, maxLineWidth);
+        pdf.text(splitText, margin, yPos);
+        yPos += splitText.length * lineHeight;
+        addPageIfNeeded();
+      });
+
+      yPos += lineHeight; // Espaçamento extra entre seções
+      addPageIfNeeded();
+
+      // Seção: Fotos
+      if (reportData.fotos && reportData.fotos.length > 0) {
+        pdf.setFontSize(12); // Título de seção
+        pdf.text("Fotos", margin, yPos);
+        yPos += lineHeight * 1.5;
+        addPageIfNeeded();
+
+        const imgWidth = 20; // Largura do ícone em mm
+        const imgHeight = 20; // Altura do ícone em mm
+        const imgMargin = 5; // Margem entre ícones
+        let currentX = margin;
+
+        for (const photoUrl of reportData.fotos) {
+          addPageIfNeeded(); // Verifica se há espaço antes de adicionar a imagem
+          if (currentX + imgWidth > 210 - margin) { // Se não houver espaço na linha atual
+            currentX = margin;
+            yPos += imgHeight + imgMargin;
+            addPageIfNeeded();
+          }
+
+          // Adicionar imagem
+          try {
+            // jsPDF addImage pode ter problemas com Data URLs muito longas ou malformadas.
+            // É mais robusto se a imagem já for um Blob ou URL de imagem.
+            // Para Data URLs, é importante que estejam corretas.
+            pdf.addImage(photoUrl, 'PNG', currentX, yPos, imgWidth, imgHeight);
+          } catch (imgError) {
+            console.error("Erro ao adicionar imagem ao PDF:", imgError);
+            // Opcional: Adicionar um texto de placeholder se a imagem falhar
+            pdf.setFontSize(8);
+            pdf.text("Erro na imagem", currentX, yPos + imgHeight / 2, { align: 'center' });
+            pdf.setFontSize(10); // Resetar fonte
+          }
+          currentX += imgWidth + imgMargin;
+        }
+        yPos += imgHeight + lineHeight; // Espaço após as fotos
+        addPageIfNeeded();
+      }
+
+      const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
+      pdf.save(filename);
+      console.log("DEBUG: PDF salvo com sucesso (ou tentativa de download iniciada).");
+
+    } catch (error) {
+      console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
+      alert("Erro ao gerar PDF. Por favor, verifique o console do navegador para mais detalhes.");
+      setErrorFunc(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
+    } finally {
+      setLoadingPdfFunc(false);
+      setIsPdfModeFunc(false);
+      console.log("DEBUG: Geração de PDF finalizada (limpeza de estados).");
+    }
   }, []);
 
   const openPhotoModal = (photoUrl) => {
@@ -641,7 +672,8 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
     ...report, // Preenche se estiver editando
   });
 
-  const reportContentRef = useRef(null);
+  // reportContentRef não é mais usado para geração de PDF, mas é mantido para o layout da tela
+  const reportContentRef = useRef(null); 
   const fileInputRef = useRef(null); // Referência para o input de arquivo
 
   const handleChange = (e) => {
@@ -679,8 +711,9 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
 
   const handleGeneratePdfClick = async () => {
     console.log("DEBUG: Botão Gerar PDF clicado no ReportForm.");
-    setLoadingPdf(true);
-    await onGeneratePdf(formData, reportContentRef, setLoadingPdf, setIsPdfMode, setError);
+    // Passamos apenas os dados do formulário, pois a geração agora é baseada em texto
+    setLoadingPdf(true); // Ativa o estado de carregamento do PDF
+    await onGeneratePdf(formData, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
   return (
@@ -690,15 +723,16 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
         {isEditing ? 'Editar Relatório' : 'Novo Relatório'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* O ref reportContentRef e as classes condicionais isPdfMode não afetam mais o PDF gerado */}
         <div ref={reportContentRef} className={`
           p-4 sm:p-6
-          ${isPdfMode ? 'px-8 py-8 text-xs leading-snug' : 'md:p-12 lg:px-28 lg:py-20'} 
+          md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 space-y-4
         `}>
-          <h3 className={`font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Informações da Visita</h3>
+          <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="propriedade" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Propriedade:</label>
+              <label htmlFor="propriedade" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Nome da Propriedade:</label>
               <input
                 type="text"
                 id="propriedade"
@@ -706,11 +740,11 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 value={formData.propriedade}
                 onChange={handleChange}
                 required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
               />
             </div>
             <div>
-              <label htmlFor="lavoura" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Lavoura:</label>
+              <label htmlFor="lavoura" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Nome da Lavoura:</label>
               <input
                 type="text"
                 id="lavoura"
@@ -718,11 +752,11 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 value={formData.lavoura}
                 onChange={handleChange}
                 required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
               />
             </div>
             <div>
-              <label htmlFor="dataVisita" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Data da Visita:</label>
+              <label htmlFor="dataVisita" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Data da Visita:</label>
               <input
                 type="date"
                 id="dataVisita"
@@ -730,100 +764,100 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                 value={formData.dataVisita}
                 onChange={handleChange}
                 required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
               />
             </div>
             <div>
-              <label htmlFor="condicoesClimaticas" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Condições Climáticas:</label>
+              <label htmlFor="condicoesClimaticas" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Condições Climáticas:</label>
               <input
                 type="text"
                 id="condicoesClimaticas"
                 name="condicoesClimaticas"
                 value={formData.condicoesClimaticas}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
               />
             </div>
             <div>
-              <label htmlFor="responsavelTecnico" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Responsável Técnico:</label>
+              <label htmlFor="responsavelTecnico" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Responsável Técnico:</label>
               <input
                 type="text"
                 id="responsavelTecnico"
                 name="responsavelTecnico"
                 value={formData.responsavelTecnico}
                 onChange={handleChange}
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
               />
             </div>
           </div>
 
-          <h3 className={`font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Observações Técnicas</h3>
+          <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center`}>Observações Técnicas</h3>
           <div>
-            <label htmlFor="estagioFenologico" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Estágio Fenológico Observado:</label>
+            <label htmlFor="estagioFenologico" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Estágio Fenológico Observado:</label>
             <input
               type="text"
               id="estagioFenologico"
               name="estagioFenologico"
               value={formData.estagioFenologico}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
             />
           </div>
 
           <div>
-            <label htmlFor="observacoesGerais" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Observações Gerais da Lavoura:</label>
+            <label htmlFor="observacoesGerais" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Observações Gerais da Lavoura:</label>
             <textarea
               id="observacoesGerais"
               name="observacoesGerais"
               rows="3"
               value={formData.observacoesGerais}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
             ></textarea>
           </div>
 
           <div>
-            <label htmlFor="problemasIdentificados" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Problemas Identificados (Pragas, Doenças, Daninhas, etc.):</label>
+            <label htmlFor="problemasIdentificados" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Problemas Identificados (Pragas, Doenças, Daninhas, etc.):</label>
             <textarea
               id="problemasIdentificados"
               name="problemasIdentificados"
               rows="4"
               value={formData.problemasIdentificados}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
             ></textarea>
           </div>
 
           <div>
-            <label htmlFor="orientacoesTecnicas" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Orientações Técnicas Fornecidas:</label>
+            <label htmlFor="orientacoesTecnicas" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Orientações Técnicas Fornecidas:</label>
             <textarea
               id="orientacoesTecnicas"
               name="orientacoesTecnicas"
               rows="4"
               value={formData.orientacoesTecnicas}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
             ></textarea>
           </div>
 
           <div>
-            <label htmlFor="potencialProdutivo" className={`block font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Padrão de Qualidade e Potencial Produtivo Estimado:</label>
+            <label htmlFor="potencialProdutivo" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Padrão de Qualidade e Potencial Produtivo Estimado:</label>
             <textarea
               id="potencialProdutivo"
               name="potencialProdutivo"
               rows="3"
               value={formData.potencialProdutivo}
               onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 ${isPdfMode ? 'text-xs' : 'text-lg'}`}
+              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
             ></textarea>
           </div>
 
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
-            <h3 className={`font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-sm' : 'text-lg'}`}>
+            <h3 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center`}>
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
-            {!isPdfMode && (
+            {!isPdfMode && ( // isPdfMode é false aqui, então os botões aparecem
               <>
                 <input
                   type="file"
@@ -844,12 +878,12 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
             )}
             <div className={`
               grid gap-4
-              ${isPdfMode ? 'flex flex-wrap' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}
+              grid-cols-2 sm:grid-cols-3 md:grid-cols-4
             `}>
               {formData.fotos.map((photoUrl, index) => (
                 <div key={index} className={`
                   relative group rounded-lg overflow-hidden shadow-sm
-                  ${isPdfMode ? 'w-16 h-16 mr-2 mb-2' : 'aspect-w-16 aspect-h-9'}
+                  aspect-w-16 aspect-h-9
                 `}>
                   <img
                     src={photoUrl}
@@ -861,7 +895,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPh
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
                     }}
                   />
-                  {!isPdfMode && (
+                  {!isPdfMode && ( // isPdfMode é false aqui, então o botão de remover aparece
                     <button
                       type="button"
                       onClick={() => handleRemovePhoto(index)}
@@ -923,11 +957,11 @@ ReportForm.propTypes = {
 };
 
 const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
-  const reportContentRef = useRef(null);
+  const reportContentRef = useRef(null); // Não é mais usado para geração de PDF, mas é mantido para o layout da tela
 
   const handleGeneratePdfClick = async () => {
-    setLoadingPdf(true);
-    await onGeneratePdf(report, reportContentRef, setLoadingPdf, setIsPdfMode, setError);
+    setLoadingPdf(true); // Ativa o estado de carregamento do PDF
+    await onGeneratePdf(report, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
   return (
@@ -938,73 +972,73 @@ const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode
       </h2>
       <div ref={reportContentRef} className={`
           p-4 sm:p-6
-          ${isPdfMode ? 'px-8 py-8 text-xs leading-snug' : 'md:p-12 lg:px-28 lg:py-20'} 
+          md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
         `}>
-        <h3 className={`font-bold text-green-700 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Informações da Visita</h3>
+        <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Propriedade:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.propriedade}</p>
+            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Nome da Propriedade:</p>
+            <p className={`text-gray-900 font-semibold text-xl`}>{report.propriedade}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Nome da Lavoura:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.lavoura}</p>
+            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Nome da Lavoura:</p>
+            <p className={`text-gray-900 font-semibold text-xl`}>{report.lavoura}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Data da Visita:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
+            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Data da Visita:</p>
+            <p className={`text-gray-900 font-semibold text-xl`}>{new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Condições Climáticas:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.condicoesClimaticas}</p>
+            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Condições Climáticas:</p>
+            <p className={`text-gray-900 font-semibold text-xl`}>{report.condicoesClimaticas}</p>
           </div>
           <div>
-            <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Responsável Técnico:</p>
-            <p className={`text-gray-900 font-semibold ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.responsavelTecnico}</p>
+            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Responsável Técnico:</p>
+            <p className={`text-gray-900 font-semibold text-xl`}>{report.responsavelTecnico}</p>
           </div>
         </div>
 
-        <h3 className={`font-bold text-green-700 mt-6 mb-4 text-center ${isPdfMode ? 'text-sm' : 'text-xl'}`}>Observações Técnicas</h3>
+        <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center`}>Observações Técnicas</h3>
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Estágio Fenológico Observado:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.estagioFenologico}</p>
+          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Estágio Fenológico Observado:</p>
+          <p className={`text-gray-900 text-xl`}>{report.estagioFenologico}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Observações Gerais da Lavoura:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.observacoesGerais}</p>
+          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Observações Gerais da Lavoura:</p>
+          <p className={`text-gray-900 text-xl`}>{report.observacoesGerais}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Problemas Identificados:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.problemasIdentificados}</p>
+          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Problemas Identificados:</p>
+          <p className={`text-gray-900 text-xl`}>{report.problemasIdentificados}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Orientações Técnicas Fornecidas:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.orientacoesTecnicas}</p>
+          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Orientações Técnicas Fornecidas:</p>
+          <p className={`text-gray-900 text-xl`}>{report.orientacoesTecnicas}</p>
         </div>
 
         <div>
-          <p className={`font-semibold text-gray-700 mb-1 ${isPdfMode ? 'text-xs' : 'text-lg'}`}>Padrão de Qualidade e Potencial Produtivo Estimado:</p>
-          <p className={`text-gray-900 ${isPdfMode ? 'text-xs' : 'text-xl'}`}>{report.potencialProdutivo}</p>
+          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Padrão de Qualidade e Potencial Produtivo Estimado:</p>
+          <p className={`text-gray-900 text-xl`}>{report.potencialProdutivo}</p>
         </div>
 
         {report.fotos && report.fotos.length > 0 && (
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
-            <h4 className={`font-semibold text-gray-700 mb-3 flex items-center ${isPdfMode ? 'text-xs' : 'text-lg'}`}>
+            <h4 className={`text-lg font-semibold text-gray-700 mb-3 flex items-center`}>
               <Camera className="w-5 h-5 mr-2" />
               Fotos
             </h4>
             <div className={`
               grid gap-4
-              ${isPdfMode ? 'flex flex-wrap' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'}
+              grid-cols-2 sm:grid-cols-3 md:grid-cols-4
             `}>
               {report.fotos.map((photoUrl, index) => (
                 <div key={index} className={`
                   relative group rounded-lg overflow-hidden shadow-sm
-                  ${isPdfMode ? 'w-16 h-16 mr-2 mb-2' : 'aspect-w-16 aspect-h-9'}
+                  aspect-w-16 aspect-h-9
                 `}>
                   <img
                     src={photoUrl}
