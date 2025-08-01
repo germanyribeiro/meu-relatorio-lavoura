@@ -336,7 +336,8 @@ const App = () => {
         }
       });
     }, 100);
-  }, [setLoadingPdf, setIsPdfMode, setError]); // Dependências para useCallback
+  }, []); // Dependências para useCallback agora está vazio.
+  // As funções de atualização de estado (setLoadingPdf, setIsPdfMode, setError) são estáveis e não precisam ser dependências.
 
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
@@ -1009,7 +1010,7 @@ const PhotoModal = ({ imageUrl, onClose }) => {
         <img
           src={imageUrl}
           alt="Visualização da Foto"
-          className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-xl"
+          className="max-w-full h-auto object-contain rounded-lg shadow-xl"
           onError={(e) => {
             e.target.onerror = null;
             e.target.src = `https://placehold.co/600x400/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
