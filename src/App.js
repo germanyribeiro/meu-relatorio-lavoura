@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'; // Importado useMemo e useCallback
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
@@ -19,15 +19,33 @@ const App = () => {
   const currentAppId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
   
   // Usando useMemo para memorizar firebaseConfig e evitar o aviso do ESLint
-  const firebaseConfig = useMemo(() => ({
-    apiKey: "AIzaSyBwlHn7CommvM6psGiJjwN3AWYemiJ9uj4",
-    authDomain: "lavourasapp.firebaseapp.com",
-    projectId: "lavourasapp",
-    storageBucket: "lavourasapp.firebasestorage.app",
-    messagingSenderId: "576349607032",
-    appId: "1:576349607032:web:3a36527be7aaf7ee2ec98d",
-    measurementId: "G-W5CJR02XDX"
-  }), []); // Array de dependências vazio para garantir que seja criado apenas uma vez
+  const firebaseConfig = useMemo(() => {
+    // Tenta usar a configuração fornecida pelo ambiente Canvas
+    if (typeof window.__firebase_config !== 'undefined' && window.__firebase_config) {
+      try {
+        const parsedConfig = JSON.parse(window.__firebase_config);
+        // Verifica se a configuração parseada é um objeto válido e não está vazia
+        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) {
+          console.log("DEBUG: Usando configuração do Firebase fornecida pelo ambiente Canvas.");
+          return parsedConfig;
+        }
+      } catch (e) {
+        console.error("Erro ao parsear __firebase_config:", e);
+        // Cai para a configuração hardcoded se houver erro no parse
+      }
+    }
+    // Fallback para a configuração hardcoded se __firebase_config não estiver disponível ou for inválido
+    console.log("DEBUG: Usando configuração do Firebase hardcoded (fallback).");
+    return {
+      apiKey: "AIzaSyBwlHn7CommvM6psGiJjwN3AWYemiJ9uj4",
+      authDomain: "lavourasapp.firebaseapp.com",
+      projectId: "lavourasapp",
+      storageBucket: "lavourasapp.firebasestorage.app",
+      messagingSenderId: "576349607032",
+      appId: "1:576349607032:web:3a36527be7aaf7ee2ec98d",
+      measurementId: "G-W5CJR02XDX"
+    };
+  }, []); // Array de dependências vazio para garantir que seja criado apenas uma vez
 
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
@@ -51,47 +69,68 @@ const App = () => {
 
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
-    try {
-      // initialAuthToken é específico do ambiente Canvas e não deve ser usado em deploy direto.
-      // A remoção da tentativa de signInWithCustomToken aqui evita o erro 'auth/custom-token-mismatch'
-      // quando a aplicação é acessada fora do Canvas.
-      // const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : '';
-
-      if (!Object.keys(firebaseConfig).length) {
-        throw new Error("A configuração do Firebase está faltando. Por favor, certifique-se de que __firebase_config foi fornecido.");
-      }
-
-      const app = initializeApp(firebaseConfig);
-      const firestore = getFirestore(app);
-      const firebaseAuth = getAuth(app);
-
-      setDb(firestore);
-      setAuth(firebaseAuth);
-
-      const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
-        if (user) {
-          // Se um usuário está logado (seja por email/senha ou token inicial válido), define o userId.
-          setUserId(user.uid);
-          setIsAuthReady(true);
-          setLoading(false);
-          setAuthMessage(''); // Limpa mensagens de autenticação ao logar
-        } else {
-          // Se não há usuário logado, garante que a tela de login/cadastro seja exibida.
-          // Não tentamos mais signInWithCustomToken aqui para evitar o erro 'auth/custom-token-mismatch'
-          // em ambientes onde o token inicial não é fornecido ou é inválido.
-          setUserId(null); // Define userId como nulo para mostrar a tela de login
-          setIsAuthReady(true); // Indica que a checagem de autenticação terminou
-          setLoading(false);
+    const initializeFirebase = async () => {
+      try {
+        if (!Object.keys(firebaseConfig).length) {
+          throw new Error("A configuração do Firebase está faltando. Por favor, certifique-se de que __firebase_config foi fornecido.");
         }
-      });
 
-      return () => unsubscribe();
-    }
-    catch (err) {
-      console.error("Erro na inicialização do Firebase:", err);
-      setError(`Erro na inicialização do Firebase: ${err.message}`);
-      setLoading(false);
-    }
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);
+        const firebaseAuth = getAuth(app);
+
+        setDb(firestore);
+        setAuth(firebaseAuth);
+
+        // Lógica de autenticação inicial
+        if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+          try {
+            await signInWithCustomToken(firebaseAuth, window.__initial_auth_token);
+            console.log("DEBUG: Autenticado com token personalizado do Canvas.");
+          } catch (tokenError) {
+            console.error("Erro ao autenticar com token personalizado do Canvas:", tokenError);
+            // Se o token personalizado falhar, tenta login anônimo como fallback
+            try {
+              await signInAnonymously(firebaseAuth);
+              console.log("DEBUG: Autenticado anonimamente após falha do token personalizado.");
+            } catch (anonError) {
+              console.error("Erro ao autenticar anonimamente:", anonError);
+              setError(`Erro de autenticação inicial: ${anonError.message}`);
+            }
+          }
+        } else {
+          // Se não houver token personalizado, tenta login anônimo
+          try {
+            await signInAnonymously(firebaseAuth);
+            console.log("DEBUG: Autenticado anonimamente.");
+          } catch (anonError) {
+            console.error("Erro ao autenticar anonimamente:", anonError);
+            setError(`Erro de autenticação inicial: ${anonError.message}`);
+          }
+        }
+
+        const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+          if (user) {
+            setUserId(user.uid);
+            setIsAuthReady(true);
+            setLoading(false);
+            setAuthMessage('');
+          } else {
+            setUserId(null);
+            setIsAuthReady(true);
+            setLoading(false);
+          }
+        });
+
+        return () => unsubscribe(); // Retorna a função de cleanup para o onAuthStateChanged
+      } catch (err) {
+        console.error("Erro na inicialização do Firebase:", err);
+        setError(`Erro na inicialização do Firebase: ${err.message}`);
+        setLoading(false);
+      }
+    };
+
+    initializeFirebase();
   }, [firebaseConfig]); // firebaseConfig agora está memorizado, então esta dependência é estável
 
   // Busca relatórios quando a autenticação está pronta e o db está disponível
