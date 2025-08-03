@@ -699,7 +699,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -1023,7 +1023,7 @@ ReportForm.propTypes = {
   shareMessage: PropTypes.object, // Reintroduzido propType para a mensagem de compartilhamento
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
+const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
   const reportContentRef = useRef(null); // Não é mais usado para geração de PDF, mas é mantido para o layout da tela
 
   const handleGeneratePdfClick = async () => {
