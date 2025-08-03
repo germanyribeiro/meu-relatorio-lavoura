@@ -417,12 +417,12 @@ const App = () => {
 
   // Nova função para compartilhar o relatório via links diretos
   const handleShareReport = useCallback(async (reportData) => {
-    // Primeiro, informar o usuário para baixar o PDF
+    // Informar o usuário para baixar o PDF primeiro e depois usar os links para enviar o arquivo baixado.
     setShareMessage({
         type: 'prompt',
-        text: 'Para compartilhar, primeiro clique em "Gerar PDF" para baixar o relatório. Depois, use os links abaixo para enviar o arquivo baixado:',
+        text: 'Para compartilhar o PDF, primeiro clique em "Gerar PDF" para baixar o arquivo. Depois, use os links abaixo para enviar o **arquivo baixado**:',
         emailLink: `mailto:?subject=${encodeURIComponent(`Relatório de Lavoura: ${reportData.propriedade} - ${reportData.lavoura}`)}&body=${encodeURIComponent(`Olá,\n\nSegue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.\n\nPor favor, anexe o PDF que você acabou de baixar.`)}`,
-        whatsappLink: `https://wa.me/?text=${encodeURIComponent(`Segue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}. Por favor, anexe o PDF que você acabou de baixar.`)}`
+        whatsappLink: `https://wa.me/?text=${encodeURIComponent(`Olá! Segue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}. Por favor, anexe o PDF que você acabou de baixar.`)}`
     });
 
     // Limpa a mensagem após alguns segundos para não sobrecarregar a UI
