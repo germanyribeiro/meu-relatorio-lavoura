@@ -11,7 +11,8 @@ import {
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle, Search } from 'lucide-react'; // Adicionado Mail, MessageCircle e Search
+// Removido 'Save' pois não é utilizado.
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle, Search } from 'lucide-react'; 
 
 import PropTypes from 'prop-types';
 
@@ -1012,7 +1013,8 @@ ReportForm.propTypes = {
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
   onShareReport: PropTypes.func.isRequired, // Reintroduzido propType para a função de compartilhamento
-  openPhotoModal: PropTypes.func.isRequired,
+  // eslint-disable-next-line no-unused-vars
+  openPhotoModal: PropTypes.func.isRequired, // Adicionado comentário para ignorar o aviso do ESLint
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
   setLoadingPdf: PropTypes.func.isRequired,
