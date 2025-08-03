@@ -11,8 +11,8 @@ import {
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
-// Removido 'Save' pois não é utilizado.
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle, Search } from 'lucide-react'; 
+// Reintroduzido 'Save' pois é utilizado no componente ReportForm.
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle, Search } from 'lucide-react'; 
 
 import PropTypes from 'prop-types';
 
@@ -916,7 +916,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
               />
               <button
                 type="button"
-                onClick={() => openPhotoModal(null)} // Passa null ou um valor padrão se não houver foto específica para adicionar
+                onClick={() => fileInputRef.current.click()} // Alterado para acionar o clique do input de arquivo
                 className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
               >
                 <PlusCircle className="w-5 h-5 mr-2" />
