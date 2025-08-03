@@ -27,7 +27,7 @@ const App = () => {
       try {
         const parsedConfig = JSON.parse(window.__firebase_config);
         // Verifica se a configuração parseada é um objeto válido e não está vazia
-        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) {
+        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) { // CORREÇÃO AQUI: 'object"' para 'object'
           console.log("DEBUG: Tentando usar configuração do Firebase fornecida pelo ambiente Canvas.");
           configToUse = parsedConfig;
         }
@@ -1129,66 +1129,66 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoM
       </div>
       {shareMessage && (
         <div className={`mt-4 p-3 rounded-lg text-center ${shareMessage.type === 'error' ? 'bg-red-100 text-red-700' : shareMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-          {shareMessage.text}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Prop Types for ReportView
-ReportView.propTypes = {
-  report: PropTypes.object.isRequired,
-  onCancel: PropTypes.func.isRequired,
-  onGeneratePdf: PropTypes.func.isRequired,
-  onShareReport: PropTypes.func.isRequired, // Adiciona propType para a função de compartilhamento
-  openPhotoModal: PropTypes.func.isRequired,
-  isPdfMode: PropTypes.bool.isRequired,
-  loadingPdf: PropTypes.bool.isRequired,
-  setLoadingPdf: PropTypes.func.isRequired,
-  setIsPdfMode: PropTypes.func.isRequired,
-  setError: PropTypes.func.isRequired,
-  shareMessage: PropTypes.object, // Adiciona propType para a mensagem de compartilhamento
-};
-
-const PhotoModal = ({ imageUrl, onClose }) => {
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
-      onClick={onClose}
-    >
-      <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-        <img
-          src={imageUrl}
-          alt="Visualização da Foto"
-          className="max-w-full h-auto object-contain rounded-lg shadow-xl"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = `https://placehold.co/600x400/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
-          }}
-        />
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white bg-gray-800 bg-opacity-50 rounded-full p-2 hover:bg-gray-700 transition-colors duration-200"
-          aria-label="Fechar"
-        >
-          <XCircle className="w-8 h-8" />
-        </button>
+            {shareMessage.text}
+          </div>
+        )}
       </div>
-    </div>
-  );
-};
-
-PhotoModal.propTypes = {
-  imageUrl: PropTypes.string.isRequired,
-  onClose: PropTypes.func.isRequired,
-};
-
-export default App;
+    );
+  };
+  
+  // Prop Types for ReportView
+  ReportView.propTypes = {
+    report: PropTypes.object.isRequired,
+    onCancel: PropTypes.func.isRequired,
+    onGeneratePdf: PropTypes.func.isRequired,
+    onShareReport: PropTypes.func.isRequired, // Adiciona propType para a função de compartilhamento
+    openPhotoModal: PropTypes.func.isRequired,
+    isPdfMode: PropTypes.bool.isRequired,
+    loadingPdf: PropTypes.bool.isRequired,
+    setLoadingPdf: PropTypes.func.isRequired,
+    setIsPdfMode: PropTypes.func.isRequired,
+    setError: PropTypes.func.isRequired,
+    shareMessage: PropTypes.object, // Adiciona propType para a mensagem de compartilhamento
+  };
+  
+  const PhotoModal = ({ imageUrl, onClose }) => {
+    useEffect(() => {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }, []);
+  
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+        onClick={onClose}
+      >
+        <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          <img
+            src={imageUrl}
+            alt="Visualização da Foto"
+            className="max-w-full h-auto object-contain rounded-lg shadow-xl"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = `https://placehold.co/600x400/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
+            }}
+          />
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-white bg-gray-800 bg-opacity-50 rounded-full p-2 hover:bg-gray-700 transition-colors duration-200"
+            aria-label="Fechar"
+          >
+            <XCircle className="w-8 h-8" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  PhotoModal.propTypes = {
+    imageUrl: PropTypes.string.isRequired,
+    onClose: PropTypes.func.isRequired,
+  };
+  
+  export default App;
