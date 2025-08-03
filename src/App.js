@@ -4,7 +4,7 @@ import {
   getAuth, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
-  signOut, 
+  signOut,
   onAuthStateChanged, 
   signInWithCustomToken
 } from 'firebase/auth';
@@ -27,7 +27,7 @@ const App = () => {
       try {
         const parsedConfig = JSON.parse(window.__firebase_config);
         // Verifica se a configuração parseada é um objeto válido e não está vazia
-        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) { // CORREÇÃO AQUI: 'object"' para 'object'
+        if (parsedConfig && typeof parsedConfig === 'object' && Object.keys(parsedConfig).length > 0) {
           console.log("DEBUG: Tentando usar configuração do Firebase fornecida pelo ambiente Canvas.");
           configToUse = parsedConfig;
         }
