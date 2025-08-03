@@ -429,7 +429,7 @@ const App = () => {
     setTimeout(() => setShareMessage(null), 15000); // Aumentado para 15 segundos
   }, []);
 
-
+  // eslint-disable-next-line no-unused-vars
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
     setShowPhotoModal(true);
