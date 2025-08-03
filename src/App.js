@@ -11,7 +11,7 @@ import {
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle } from 'lucide-react'; // Adicionado Mail e MessageCircle
 
 import PropTypes from 'prop-types';
 
@@ -68,7 +68,8 @@ const App = () => {
   // isPdfMode não é mais necessário para controle de estilo no HTML, mas pode ser útil para o loadingPdf
   const [isPdfMode, setIsPdfMode] = useState(false); 
   const [loadingPdf, setLoadingPdf] = useState(false);
-  const [shareMessage, setShareMessage] = useState(null); // Novo estado para mensagem de compartilhamento
+  // Reintroduzido shareMessage para exibir links de compartilhamento
+  const [shareMessage, setShareMessage] = useState(null); 
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
@@ -413,33 +414,18 @@ const App = () => {
     }
   }, []);
 
-  // Nova função para compartilhar o relatório
+  // Nova função para compartilhar o relatório via links diretos
   const handleShareReport = useCallback(async (reportData) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Relatório de Lavoura: ${reportData.propriedade} - ${reportData.lavoura}`,
-          text: `Confira o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.`,
-          url: window.location.href // Compartilha o URL do aplicativo
-        });
-        setShareMessage({ type: 'success', text: 'Relatório compartilhado com sucesso!' });
-        console.log('Relatório compartilhado com sucesso!');
-      } catch (error) {
-        console.error('Erro ao compartilhar o relatório:', error);
-        if (error.name === 'NotAllowedError') {
-          setShareMessage({ type: 'error', text: 'Permissão para compartilhar negada. Isso geralmente ocorre em ambientes não seguros (não HTTPS) ou se a ação não foi iniciada por um gesto direto do usuário. Em iframes, a funcionalidade pode ser restrita e o navegador pode bloquear o compartilhamento.' });
-        } else if (error.name === 'AbortError') {
-          setShareMessage({ type: 'info', text: 'Compartilhamento cancelado.' });
-        } else {
-          setShareMessage({ type: 'error', text: `Não foi possível compartilhar o relatório: ${error.message}.` });
-        }
-      }
-    } else {
-      setShareMessage({ type: 'info', text: 'A API de Compartilhamento Web não é suportada neste navegador. Por favor, gere o PDF e compartilhe-o manualmente.' });
-      console.log('Web Share API não suportada neste navegador.');
-    }
-    // Limpa a mensagem após alguns segundos
-    setTimeout(() => setShareMessage(null), 7000); // Aumentado para 7 segundos para melhor leitura
+    // Primeiro, informar o usuário para baixar o PDF
+    setShareMessage({
+        type: 'prompt',
+        text: 'Para compartilhar, primeiro clique em "Gerar PDF" para baixar o relatório. Depois, use os links abaixo para enviar o arquivo baixado:',
+        emailLink: `mailto:?subject=${encodeURIComponent(`Relatório de Lavoura: ${reportData.propriedade} - ${reportData.lavoura}`)}&body=${encodeURIComponent(`Olá,\n\nSegue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.\n\nPor favor, anexe o PDF que você acabou de baixar.`)}`,
+        whatsappLink: `https://wa.me/?text=${encodeURIComponent(`Segue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}. Por favor, anexe o PDF que você acabou de baixar.`)}`
+    });
+
+    // Limpa a mensagem após alguns segundos para não sobrecarregar a UI
+    setTimeout(() => setShareMessage(null), 15000); // Aumentado para 15 segundos
   }, []);
 
 
@@ -686,7 +672,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => {
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -746,6 +732,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
     await onGeneratePdf(formData, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
+  // Reintroduzida a função handleShareClick
   const handleShareClick = () => {
     onShareReport(formData); // Chama a função de compartilhamento
   };
@@ -961,6 +948,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
             {loadingPdf ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
             {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
           </button>
+          {/* Reintroduzido o botão de Compartilhar */}
           <button
             type="button"
             onClick={handleShareClick}
@@ -970,9 +958,20 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
             Compartilhar
           </button>
         </div>
+        {/* Reintroduzida a exibição da mensagem de compartilhamento com links */}
         {shareMessage && (
           <div className={`mt-4 p-3 rounded-lg text-center ${shareMessage.type === 'error' ? 'bg-red-100 text-red-700' : shareMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-            {shareMessage.text}
+            <p className="mb-2">{shareMessage.text}</p>
+            {shareMessage.emailLink && (
+                <a href={shareMessage.emailLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300 ease-in-out mr-2">
+                    <Mail className="w-4 h-4 mr-2" /> E-mail
+                </a>
+            )}
+            {shareMessage.whatsappLink && (
+                <a href={shareMessage.whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300 ease-in-out">
+                    <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+                </a>
+            )}
           </div>
         )}
       </form>
@@ -986,17 +985,17 @@ ReportForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
-  onShareReport: PropTypes.func.isRequired, // Adiciona propType para a função de compartilhamento
+  onShareReport: PropTypes.func.isRequired, // Reintroduzido propType para a função de compartilhamento
   openPhotoModal: PropTypes.func.isRequired,
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
   setLoadingPdf: PropTypes.func.isRequired,
   setIsPdfMode: PropTypes.func.isRequired, 
   setError: PropTypes.func.isRequired, 
-  shareMessage: PropTypes.object, // Adiciona propType para a mensagem de compartilhamento
+  shareMessage: PropTypes.object, // Reintroduzido propType para a mensagem de compartilhamento
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => {
+const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
   const reportContentRef = useRef(null); // Não é mais usado para geração de PDF, mas é mantido para o layout da tela
 
   const handleGeneratePdfClick = async () => {
@@ -1004,6 +1003,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoM
     await onGeneratePdf(report, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
+  // Reintroduzida a função handleShareClick
   const handleShareClick = () => {
     onShareReport(report); // Chama a função de compartilhamento
   };
@@ -1118,6 +1118,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoM
           {loadingPdf ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
           {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
         </button>
+        {/* Reintroduzido o botão de Compartilhar */}
         <button
           type="button"
           onClick={handleShareClick}
@@ -1127,9 +1128,20 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoM
           Compartilhar
         </button>
       </div>
+      {/* Reintroduzida a exibição da mensagem de compartilhamento com links */}
       {shareMessage && (
         <div className={`mt-4 p-3 rounded-lg text-center ${shareMessage.type === 'error' ? 'bg-red-100 text-red-700' : shareMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-            {shareMessage.text}
+            <p className="mb-2">{shareMessage.text}</p>
+            {shareMessage.emailLink && (
+                <a href={shareMessage.emailLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300 ease-in-out mr-2">
+                    <Mail className="w-4 h-4 mr-2" /> E-mail
+                </a>
+            )}
+            {shareMessage.whatsappLink && (
+                <a href={shareMessage.whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300 ease-in-out">
+                    <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+                </a>
+            )}
           </div>
         )}
       </div>
@@ -1141,14 +1153,14 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoM
     report: PropTypes.object.isRequired,
     onCancel: PropTypes.func.isRequired,
     onGeneratePdf: PropTypes.func.isRequired,
-    onShareReport: PropTypes.func.isRequired, // Adiciona propType para a função de compartilhamento
+    onShareReport: PropTypes.func.isRequired, // Reintroduzido propType para a função de compartilhamento
     openPhotoModal: PropTypes.func.isRequired,
     isPdfMode: PropTypes.bool.isRequired,
     loadingPdf: PropTypes.bool.isRequired,
     setLoadingPdf: PropTypes.func.isRequired,
     setIsPdfMode: PropTypes.func.isRequired,
     setError: PropTypes.func.isRequired,
-    shareMessage: PropTypes.object, // Adiciona propType para a mensagem de compartilhamento
+    shareMessage: PropTypes.object, // Reintroduzido propType para a mensagem de compartilhamento
   };
   
   const PhotoModal = ({ imageUrl, onClose }) => {
