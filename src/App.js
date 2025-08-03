@@ -11,7 +11,7 @@ import {
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
 
 // Importar ícones do Lucide React
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle } from 'lucide-react'; // Adicionado Mail e MessageCircle
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle, Search } from 'lucide-react'; // Adicionado Mail, MessageCircle e Search
 
 import PropTypes from 'prop-types';
 
@@ -603,13 +603,39 @@ const App = () => {
 };
 
 const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredReports = reports.filter(report => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const reportDate = new Date(report.dataVisita).toLocaleDateString('pt-BR');
+
+    return (
+      report.propriedade.toLowerCase().includes(lowerCaseSearchTerm) ||
+      report.lavoura.toLowerCase().includes(lowerCaseSearchTerm) ||
+      reportDate.includes(lowerCaseSearchTerm)
+    );
+  });
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center">
         <List className="w-6 h-6 mr-2" />
         Meus Relatórios
       </h2>
-      {reports.length === 0 ? (
+
+      {/* Campo de filtro */}
+      <div className="mb-6 relative">
+        <input
+          type="text"
+          placeholder="Filtrar por propriedade, lavoura ou data (DD/MM/AAAA)"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
+        />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+      </div>
+
+      {filteredReports.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-xl">
           <p className="text-lg text-gray-600 mb-4">Nenhum relatório encontrado. Comece criando um novo!</p>
           <button
@@ -622,7 +648,7 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {reports.map((report) => (
+          {filteredReports.map((report) => (
             <div key={report.id} className="bg-white p-6 rounded-xl shadow-lg border border-green-100 hover:shadow-xl transition duration-300 ease-in-out flex flex-col justify-between">
               <div>
                 <h3 className="text-xl font-semibold text-green-700 mb-2 truncate">{report.propriedade}</h3>
