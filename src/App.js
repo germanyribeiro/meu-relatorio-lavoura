@@ -916,7 +916,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
               />
               <button
                 type="button"
-                onClick={() => fileInputRef.current.click()}
+                onClick={() => openPhotoModal(null)} // Passa null ou um valor padrão se não houver foto específica para adicionar
                 className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
               >
                 <PlusCircle className="w-5 h-5 mr-2" />
@@ -965,6 +965,13 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
           >
             <XCircle className="w-5 h-5 mb-1 sm:mb-0 sm:mr-2" />
             Cancelar
+          </button>
+          <button
+            type="submit" // Alterado para type="submit" para salvar o formulário
+            className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
+          >
+            <Save className="w-5 h-5 mr-2" /> {/* Ícone Save adicionado */}
+            Salvar Relatório
           </button>
           <button
             type="button"
@@ -1182,7 +1189,8 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, /* eslint-
     onCancel: PropTypes.func.isRequired,
     onGeneratePdf: PropTypes.func.isRequired,
     onShareReport: PropTypes.func.isRequired, // Reintroduzido propType para a função de compartilhamento
-    openPhotoModal: PropTypes.func.isRequired,
+    // eslint-disable-next-line no-unused-vars
+    openPhotoModal: PropTypes.func.isRequired, // Adicionado comentário para ignorar o aviso do ESLint
     isPdfMode: PropTypes.bool.isRequired,
     loadingPdf: PropTypes.bool.isRequired,
     setLoadingPdf: PropTypes.func.isRequired,
