@@ -68,6 +68,7 @@ const App = () => {
   // isPdfMode não é mais necessário para controle de estilo no HTML, mas pode ser útil para o loadingPdf
   const [isPdfMode, setIsPdfMode] = useState(false); 
   const [loadingPdf, setLoadingPdf] = useState(false);
+  const [shareMessage, setShareMessage] = useState(null); // Novo estado para mensagem de compartilhamento
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
@@ -280,7 +281,7 @@ const App = () => {
     console.log("DEBUG: Função generatePdfFromReportData iniciada (modo texto).");
     if (typeof window.jspdf === 'undefined') {
       console.error("ERRO CRÍTICO: Biblioteca jsPDF não carregada. Verifique seu public/index.html e a conexão de internet.");
-      alert("Erro: A biblioteca jsPDF não foi carregada. Por favor, recarregue a página, verifique sua conexão e o console do navegador.");
+      // Não usar alert(), mas setar um erro na UI
       setErrorFunc("Erro: A biblioteca jsPDF não foi carregada. Verifique o console do navegador.");
       setLoadingPdfFunc(false);
       return;
@@ -403,7 +404,7 @@ const App = () => {
 
     } catch (error) {
       console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
-      alert("Erro ao gerar PDF. Por favor, verifique o console do navegador para mais detalhes.");
+      // Não usar alert(), mas setar um erro na UI
       setErrorFunc(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
     } finally {
       setLoadingPdfFunc(false);
@@ -421,17 +422,24 @@ const App = () => {
           text: `Confira o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.`,
           url: window.location.href // Compartilha o URL do aplicativo
         });
+        setShareMessage({ type: 'success', text: 'Relatório compartilhado com sucesso!' });
         console.log('Relatório compartilhado com sucesso!');
       } catch (error) {
         console.error('Erro ao compartilhar o relatório:', error);
-        // Não usar alert(), mas logar para depuração
-        console.log('Não foi possível compartilhar o relatório. Erro:', error.message);
+        if (error.name === 'NotAllowedError') {
+          setShareMessage({ type: 'error', text: 'Permissão para compartilhar negada. Isso geralmente ocorre em ambientes não seguros (não HTTPS) ou se a ação não foi iniciada por um gesto direto do usuário. Em iframes, a funcionalidade pode ser restrita e o navegador pode bloquear o compartilhamento.' });
+        } else if (error.name === 'AbortError') {
+          setShareMessage({ type: 'info', text: 'Compartilhamento cancelado.' });
+        } else {
+          setShareMessage({ type: 'error', text: `Não foi possível compartilhar o relatório: ${error.message}.` });
+        }
       }
     } else {
+      setShareMessage({ type: 'info', text: 'A API de Compartilhamento Web não é suportada neste navegador. Por favor, gere o PDF e compartilhe-o manualmente.' });
       console.log('Web Share API não suportada neste navegador.');
-      // Não usar alert(), mas logar para o usuário
-      console.log('O PDF foi gerado e baixado. Você pode compartilhá-lo manualmente.');
     }
+    // Limpa a mensagem após alguns segundos
+    setTimeout(() => setShareMessage(null), 7000); // Aumentado para 7 segundos para melhor leitura
   }, []);
 
 
@@ -581,6 +589,7 @@ const App = () => {
             setLoadingPdf={setLoadingPdf}
             setIsPdfMode={setIsPdfMode} 
             setError={setError} 
+            shareMessage={shareMessage} // Passa a mensagem de compartilhamento
           />
         )}
         {view === 'view' && currentReport && (
@@ -594,6 +603,7 @@ const App = () => {
             setLoadingPdf={setLoadingPdf}
             setIsPdfMode={setIsPdfMode} 
             setError={setError} 
+            shareMessage={shareMessage} // Passa a mensagem de compartilhamento
           />
         )}
       </main>
@@ -676,7 +686,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => {
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -960,6 +970,11 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
             Compartilhar
           </button>
         </div>
+        {shareMessage && (
+          <div className={`mt-4 p-3 rounded-lg text-center ${shareMessage.type === 'error' ? 'bg-red-100 text-red-700' : shareMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+            {shareMessage.text}
+          </div>
+        )}
       </form>
     </div>
   );
@@ -978,9 +993,10 @@ ReportForm.propTypes = {
   setLoadingPdf: PropTypes.func.isRequired,
   setIsPdfMode: PropTypes.func.isRequired, 
   setError: PropTypes.func.isRequired, 
+  shareMessage: PropTypes.object, // Adiciona propType para a mensagem de compartilhamento
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
+const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => {
   const reportContentRef = useRef(null); // Não é mais usado para geração de PDF, mas é mantido para o layout da tela
 
   const handleGeneratePdfClick = async () => {
@@ -1111,6 +1127,11 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, openPhotoM
           Compartilhar
         </button>
       </div>
+      {shareMessage && (
+        <div className={`mt-4 p-3 rounded-lg text-center ${shareMessage.type === 'error' ? 'bg-red-100 text-red-700' : shareMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+          {shareMessage.text}
+        </div>
+      )}
     </div>
   );
 };
@@ -1127,6 +1148,7 @@ ReportView.propTypes = {
   setLoadingPdf: PropTypes.func.isRequired,
   setIsPdfMode: PropTypes.func.isRequired,
   setError: PropTypes.func.isRequired,
+  shareMessage: PropTypes.object, // Adiciona propType para a mensagem de compartilhamento
 };
 
 const PhotoModal = ({ imageUrl, onClose }) => {
