@@ -12,7 +12,8 @@ import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection
 
 // Importar ícones do Lucide React
 // Reintroduzido 'Save' pois é utilizado no componente ReportForm.
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Share2, Mail, MessageCircle, Search } from 'lucide-react'; 
+// Removidos Share2, Mail, MessageCircle pois a funcionalidade de compartilhamento direto foi removida.
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Search, LayoutGrid, Table } from 'lucide-react'; 
 
 import PropTypes from 'prop-types';
 
@@ -69,8 +70,8 @@ const App = () => {
   // isPdfMode não é mais necessário para controle de estilo no HTML, mas pode ser útil para o loadingPdf
   const [isPdfMode, setIsPdfMode] = useState(false); 
   const [loadingPdf, setLoadingPdf] = useState(false);
-  // Reintroduzido shareMessage para exibir links de compartilhamento
-  const [shareMessage, setShareMessage] = useState(null); 
+  // shareMessage removido pois a funcionalidade de compartilhamento direto foi removida.
+  // const [shareMessage, setShareMessage] = useState(null); 
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
@@ -415,19 +416,16 @@ const App = () => {
     }
   }, []);
 
-  // Nova função para compartilhar o relatório via links diretos
-  const handleShareReport = useCallback(async (reportData) => {
-    // Informar o usuário para baixar o PDF primeiro e depois usar os links para enviar o arquivo baixado.
-    setShareMessage({
-        type: 'prompt',
-        text: 'Para compartilhar o PDF, primeiro clique em "Gerar PDF" para baixar o arquivo. Depois, use os links abaixo para enviar o **arquivo baixado**:',
-        emailLink: `mailto:?subject=${encodeURIComponent(`Relatório de Lavoura: ${reportData.propriedade} - ${reportData.lavoura}`)}&body=${encodeURIComponent(`Olá,\n\nSegue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.\n\nPor favor, anexe o PDF que você acabou de baixar.`)}`,
-        whatsappLink: `https://wa.me/?text=${encodeURIComponent(`Olá! Segue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}. Por favor, anexe o PDF que você acabou de baixar.`)}`
-    });
-
-    // Limpa a mensagem após alguns segundos para não sobrecarregar a UI
-    setTimeout(() => setShareMessage(null), 15000); // Aumentado para 15 segundos
-  }, []);
+  // handleShareReport removido pois a funcionalidade de compartilhamento direto foi removida.
+  // const handleShareReport = useCallback(async (reportData) => {
+  //   setShareMessage({
+  //       type: 'prompt',
+  //       text: 'Para compartilhar o PDF, primeiro clique em "Gerar PDF" para baixar o arquivo. Depois, use os links abaixo para enviar o **arquivo baixado**:',
+  //       emailLink: `mailto:?subject=${encodeURIComponent(`Relatório de Lavoura: ${reportData.propriedade} - ${reportData.lavoura}`)}&body=${encodeURIComponent(`Olá,\n\nSegue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.\n\nPor favor, anexe o PDF que você acabou de baixar.`)}`,
+  //       whatsappLink: `https://wa.me/?text=${encodeURIComponent(`Olá! Segue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}. Por favor, anexe o PDF que você acabou de baixar.`)}`
+  //   });
+  //   setTimeout(() => setShareMessage(null), 15000);
+  // }, []);
 
   // eslint-disable-next-line no-unused-vars
   const openPhotoModal = (photoUrl) => {
@@ -570,13 +568,13 @@ const App = () => {
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             isEditing={view === 'edit'}
             onGeneratePdf={generatePdfFromReportData}
-            onShareReport={handleShareReport} // Passa a função de compartilhamento
+            // onShareReport removido
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
             setIsPdfMode={setIsPdfMode} 
             setError={setError} 
-            shareMessage={shareMessage} // Passa a mensagem de compartilhamento
+            // shareMessage removido
           />
         )}
         {view === 'view' && currentReport && (
@@ -584,13 +582,13 @@ const App = () => {
             report={currentReport}
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
-            onShareReport={handleShareReport} // Passa a função de compartilhamento
+            // onShareReport removido
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
             setIsPdfMode={setIsPdfMode} 
             setError={setError} 
-            shareMessage={shareMessage} // Passa a mensagem de compartilhamento
+            // shareMessage removido
           />
         )}
       </main>
@@ -605,6 +603,7 @@ const App = () => {
 
 const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCardView, setIsCardView] = useState(true); // Novo estado para controlar a visualização
 
   const filteredReports = reports.filter(report => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -613,7 +612,8 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
     return (
       report.propriedade.toLowerCase().includes(lowerCaseSearchTerm) ||
       report.lavoura.toLowerCase().includes(lowerCaseSearchTerm) ||
-      reportDate.includes(lowerCaseSearchTerm)
+      reportDate.includes(lowerCaseSearchTerm) ||
+      (report.responsavelTecnico && report.responsavelTecnico.toLowerCase().includes(lowerCaseSearchTerm))
     );
   });
 
@@ -624,16 +624,34 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
         Meus Relatórios
       </h2>
 
-      {/* Campo de filtro */}
-      <div className="mb-6 relative">
-        <input
-          type="text"
-          placeholder="Filtrar por propriedade, lavoura ou data (DD/MM/AAAA)"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
-        />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+      {/* Campo de filtro e botões de visualização */}
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
+        <div className="relative w-full sm:w-auto flex-grow">
+          <input
+            type="text"
+            placeholder="Filtrar por propriedade, lavoura, data ou responsável"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
+          />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setIsCardView(true)}
+            className={`p-2 rounded-lg shadow-md transition duration-200 ease-in-out ${isCardView ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            title="Visualizar em Cartões"
+          >
+            <LayoutGrid className="w-6 h-6" />
+          </button>
+          <button
+            onClick={() => setIsCardView(false)}
+            className={`p-2 rounded-lg shadow-md transition duration-200 ease-in-out ${!isCardView ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            title="Visualizar em Tabela"
+          >
+            <Table className="w-6 h-6" />
+          </button>
+        </div>
       </div>
 
       {filteredReports.length === 0 ? (
@@ -648,43 +666,116 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredReports.map((report) => (
-            <div key={report.id} className="bg-white p-6 rounded-xl shadow-lg border border-green-100 hover:shadow-xl transition duration-300 ease-in-out flex flex-col justify-between">
-              <div>
-                <h3 className="text-xl font-semibold text-green-700 mb-2 truncate">{report.propriedade}</h3>
-                <p className="text-lg font-medium text-gray-800 mb-3">{report.lavoura}</p>
-                <p className="text-sm text-gray-600 mb-4">Data: {new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
+        isCardView ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredReports.map((report) => (
+              <div key={report.id} className="bg-white p-6 rounded-xl shadow-lg border border-green-100 hover:shadow-xl transition duration-300 ease-in-out flex flex-col justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-green-700 mb-2 truncate">{report.propriedade}</h3>
+                  <p className="text-lg font-medium text-gray-800 mb-3">{report.lavoura}</p>
+                  <p className="text-sm text-gray-600 mb-1">Data: {new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-sm text-gray-600">Responsável: {report.responsavelTecnico || 'N/A'}</p>
+                </div>
+                <div className="flex justify-end space-x-3 mt-4">
+                  <button
+                    onClick={() => onViewReport(report)}
+                    className="p-2 bg-gray-600 text-white rounded-full shadow-md hover:bg-gray-700 transition duration-200 ease-in-out transform hover:scale-110"
+                    aria-label="Ver Detalhes do Relatório"
+                    title="Ver Detalhes"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => onEdit(report)}
+                    className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition duration-200 ease-in-out transform hover:scale-110"
+                    aria-label="Editar Relatório"
+                    title="Editar"
+                  >
+                    <Edit className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => onDelete(report.id)}
+                    className="p-2 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 transition duration-200 ease-in-out transform hover:scale-110"
+                    aria-label="Excluir Relatório"
+                    title="Excluir"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-end space-x-3 mt-4">
-                <button
-                  onClick={() => onViewReport(report)}
-                  className="p-2 bg-gray-600 text-white rounded-full shadow-md hover:bg-gray-700 transition duration-200 ease-in-out transform hover:scale-110"
-                  aria-label="Ver Detalhes do Relatório"
-                  title="Ver Detalhes"
-                >
-                  <Eye className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => onEdit(report)}
-                  className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition duration-200 ease-in-out transform hover:scale-110"
-                  aria-label="Editar Relatório"
-                  title="Editar"
-                >
-                  <Edit className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => onDelete(report.id)}
-                  className="p-2 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 transition duration-200 ease-in-out transform hover:scale-110"
-                  aria-label="Excluir Relatório"
-                  title="Excluir"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto bg-white rounded-xl shadow-lg border border-green-100">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Propriedade
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lavoura
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Data da Visita
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Responsável Técnico
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredReports.map((report) => (
+                  <tr key={report.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {report.propriedade}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {report.lavoura}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {new Date(report.dataVisita).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {report.responsavelTecnico || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => onViewReport(report)}
+                          className="p-2 bg-gray-600 text-white rounded-full shadow-md hover:bg-gray-700 transition duration-200 ease-in-out transform hover:scale-110"
+                          aria-label="Ver Detalhes do Relatório"
+                          title="Ver Detalhes"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => onEdit(report)}
+                          className="p-2 bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition duration-200 ease-in-out transform hover:scale-110"
+                          aria-label="Editar Relatório"
+                          title="Editar"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => onDelete(report.id)}
+                          className="p-2 bg-red-600 text-white rounded-full shadow-md hover:bg-red-700 transition duration-200 ease-in-out transform hover:scale-110"
+                          aria-label="Excluir Relatório"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
     </div>
   );
@@ -699,7 +790,7 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShareReport, /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onShareReport, */ /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError /*, shareMessage */ }) => { // onShareReport e shareMessage removidos
   const [formData, setFormData] = useState({
     propriedade: '',
     lavoura: '',
@@ -759,10 +850,10 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
     await onGeneratePdf(formData, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
-  // Reintroduzida a função handleShareClick
-  const handleShareClick = () => {
-    onShareReport(formData); // Chama a função de compartilhamento
-  };
+  // handleShareClick removido
+  // const handleShareClick = () => {
+  //   onShareReport(formData); // Chama a função de compartilhamento
+  // };
 
   return (
     <div className="p-6 bg-white rounded-2xl shadow-lg">
@@ -982,32 +1073,9 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, onShar
             {loadingPdf ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
             {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
           </button>
-          {/* Reintroduzido o botão de Compartilhar */}
-          <button
-            type="button"
-            onClick={handleShareClick}
-            className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105"
-          >
-            <Share2 className="w-5 h-5 mr-2" />
-            Compartilhar
-          </button>
+          {/* Botão de Compartilhar removido */}
         </div>
-        {/* Reintroduzida a exibição da mensagem de compartilhamento com links */}
-        {shareMessage && (
-          <div className={`mt-4 p-3 rounded-lg text-center ${shareMessage.type === 'error' ? 'bg-red-100 text-red-700' : shareMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-            <p className="mb-2">{shareMessage.text}</p>
-            {shareMessage.emailLink && (
-                <a href={shareMessage.emailLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300 ease-in-out mr-2">
-                    <Mail className="w-4 h-4 mr-2" /> E-mail
-                </a>
-            )}
-            {shareMessage.whatsappLink && (
-                <a href={shareMessage.whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300 ease-in-out">
-                    <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-                </a>
-            )}
-          </div>
-        )}
+        {/* Exibição da mensagem de compartilhamento removida */}
       </form>
     </div>
   );
@@ -1019,7 +1087,7 @@ ReportForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
-  onShareReport: PropTypes.func.isRequired, // Reintroduzido propType para a função de compartilhamento
+  // onShareReport removido
   // eslint-disable-next-line no-unused-vars
   openPhotoModal: PropTypes.func.isRequired, // Adicionado comentário para ignorar o aviso do ESLint
   isPdfMode: PropTypes.bool.isRequired,
@@ -1027,10 +1095,10 @@ ReportForm.propTypes = {
   setLoadingPdf: PropTypes.func.isRequired,
   setIsPdfMode: PropTypes.func.isRequired, 
   setError: PropTypes.func.isRequired, 
-  shareMessage: PropTypes.object, // Reintroduzido propType para a mensagem de compartilhamento
+  // shareMessage removido
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError, shareMessage }) => { // Reintroduzido onShareReport e shareMessage
+const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError /*, shareMessage */ }) => { // onShareReport e shareMessage removidos
   const reportContentRef = useRef(null); // Não é mais usado para geração de PDF, mas é mantido para o layout da tela
 
   const handleGeneratePdfClick = async () => {
@@ -1038,10 +1106,10 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, /* eslint-
     await onGeneratePdf(report, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
-  // Reintroduzida a função handleShareClick
-  const handleShareClick = () => {
-    onShareReport(report); // Chama a função de compartilhamento
-  };
+  // handleShareClick removido
+  // const handleShareClick = () => {
+  //   onShareReport(report); // Chama a função de compartilhamento
+  // };
 
   return (
     <div className="p-6 bg-white rounded-2xl shadow-lg">
@@ -1153,32 +1221,9 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, /* eslint-
           {loadingPdf ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
           {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
         </button>
-        {/* Reintroduzido o botão de Compartilhar */}
-        <button
-          type="button"
-          onClick={handleShareClick}
-          className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105"
-        >
-          <Share2 className="w-5 h-5 mr-2" />
-          Compartilhar
-        </button>
+        {/* Botão de Compartilhar removido */}
       </div>
-      {/* Reintroduzida a exibição da mensagem de compartilhamento com links */}
-      {shareMessage && (
-        <div className={`mt-4 p-3 rounded-lg text-center ${shareMessage.type === 'error' ? 'bg-red-100 text-red-700' : shareMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-            <p className="mb-2">{shareMessage.text}</p>
-            {shareMessage.emailLink && (
-                <a href={shareMessage.emailLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition duration-300 ease-in-out mr-2">
-                    <Mail className="w-4 h-4 mr-2" /> E-mail
-                </a>
-            )}
-            {shareMessage.whatsappLink && (
-                <a href={shareMessage.whatsappLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300 ease-in-out">
-                    <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
-                </a>
-            )}
-          </div>
-        )}
+      {/* Exibição da mensagem de compartilhamento removida */}
       </div>
     );
   };
@@ -1188,7 +1233,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, /* eslint-
     report: PropTypes.object.isRequired,
     onCancel: PropTypes.func.isRequired,
     onGeneratePdf: PropTypes.func.isRequired,
-    onShareReport: PropTypes.func.isRequired, // Reintroduzido propType para a função de compartilhamento
+    // onShareReport removido
     // eslint-disable-next-line no-unused-vars
     openPhotoModal: PropTypes.func.isRequired, // Adicionado comentário para ignorar o aviso do ESLint
     isPdfMode: PropTypes.bool.isRequired,
@@ -1196,7 +1241,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, onShareReport, /* eslint-
     setLoadingPdf: PropTypes.func.isRequired,
     setIsPdfMode: PropTypes.func.isRequired,
     setError: PropTypes.func.isRequired,
-    shareMessage: PropTypes.object, // Reintroduzido propType para a mensagem de compartilhamento
+    // shareMessage removido
   };
   
   const PhotoModal = ({ imageUrl, onClose }) => {
