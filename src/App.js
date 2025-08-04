@@ -745,7 +745,8 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
       </div>
 
       {/* Botões de Ação Global (Novo Relatório) - Botão de Exportar Removido */}
-      <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-6">
+      {/* O botão "Novo Relatório" foi movido para o cabeçalho principal do App */}
+      {/* <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-6">
         <button
           onClick={onNewReport}
           className="flex items-center px-6 py-3 bg-green-600 text-white rounded-xl shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
@@ -753,8 +754,7 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
           <PlusCircle className="w-5 h-5 mr-2" />
           Novo Relatório
         </button>
-        {/* Botão de Exportar para JSON removido daqui */}
-      </div>
+      </div> */}
 
       {/* Mensagem de backup online - REMOVIDA */}
       {/* <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 mb-6 rounded-lg shadow-sm" role="alert">
