@@ -8,12 +8,12 @@ import {
   onAuthStateChanged, 
   signInWithCustomToken
 } from 'firebase/auth';
-import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, enableIndexedDbPersistence } from 'firebase/firestore'; // Importe enableIndexedDbPersistence
+import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, enableIndexedDbPersistence } from 'firebase/firestore'; 
 
 // Importar ícones do Lucide React
 // Reintroduzido 'Save' pois é utilizado no componente ReportForm.
 // Removidos Share2, Mail, MessageCircle pois a funcionalidade de compartilhamento direto foi removida.
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, LogIn, UserPlus, LogOut, Search, LayoutGrid, Table } from 'lucide-react'; 
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, EyeOff, LogIn, UserPlus, LogOut, Search, LayoutGrid, Table } from 'lucide-react'; 
 
 import PropTypes from 'prop-types';
 
@@ -65,6 +65,7 @@ const App = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [indexedDbError, setIndexedDbError] = useState(null); // NOVO ESTADO PARA ERROS DO INDEXEDDB
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState('');
   // isPdfMode não é mais necessário para controle de estilo no HTML, mas pode ser útil para o loadingPdf
@@ -78,6 +79,7 @@ const App = () => {
   const [password, setPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
   const [isLoginView, setIsLoginView] = useState(true);
+  const [showPassword, setShowPassword] = useState(false); // NOVO ESTADO: Para alternar a visibilidade da senha
 
   // Inicialização e Autenticação do Firebase
   useEffect(() => {
@@ -95,16 +97,27 @@ const App = () => {
         try {
           await enableIndexedDbPersistence(firestore);
           console.log("DEBUG: Persistência offline do Firestore habilitada.");
+          setIndexedDbError(null); // Limpa quaisquer erros anteriores do IndexedDB
         } catch (err) {
+          let errorMessage = "";
           if (err.code === 'failed-precondition') {
             // Múltiplas abas abertas, persistência não pode ser habilitada
-            console.warn("DEBUG: Persistência offline não pode ser habilitada. Provavelmente múltiplas abas abertas.");
+            console.warn("DEBUG: Persistência offline não pode ser habilitada. Provavelmente múltiplas abas abertas ou dados corrompidos.");
+            errorMessage = "Não foi possível ativar o modo offline: Múltiplas abas abertas ou dados corrompidos. Tente recarregar a página.";
           } else if (err.code === 'unimplemented') {
             // O navegador não suporta IndexedDB (raro hoje em dia)
             console.error("DEBUG: O navegador não suporta persistência offline.");
+            errorMessage = "Seu navegador não suporta o modo offline. Por favor, atualize-o ou use outro navegador.";
           } else {
+            // Catch-all para outros erros, incluindo corrupção de IndexedDB
             console.error("DEBUG: Erro ao habilitar persistência offline:", err);
+            if (err.message.includes("refusing to open IndexedDB database due to potential corruption")) {
+              errorMessage = "Erro no modo offline: O banco de dados local pode estar corrompido. Por favor, recarregue a página (Ctrl+R ou F5) para tentar re-inicializar o modo offline.";
+            } else {
+              errorMessage = `Erro inesperado ao ativar o modo offline: ${err.message}.`;
+            }
           }
+          setIndexedDbError(errorMessage); // Define o erro específico do IndexedDB, mas não bloqueia o aplicativo
         }
 
         setDb(firestore);
@@ -142,7 +155,7 @@ const App = () => {
         return () => unsubscribe();
       } catch (err) {
         console.error("DEBUG: Erro na inicialização do Firebase:", err);
-        setError(`Erro na inicialização do Firebase: ${err.message}`);
+        setError(`Erro na inicialização do Firebase: ${err.message}`); // Isso é para erros críticos de inicialização do Firebase
         setLoading(false);
       }
     };
@@ -499,17 +512,25 @@ const App = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
                 />
               </div>
-              <div>
+              <div className="relative"> {/* Adicionado div com relative para posicionar o ícone */}
                 <label htmlFor="password" className="sr-only">Senha</label>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"} // Alterna o tipo do input
                   id="password"
                   placeholder="Sua senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg pr-10" // Adicionado padding à direita
                 />
+                <button
+                  type="button" // Importante: type="button" para não submeter o formulário
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                  aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
               {authMessage && (
                 <p className={`text-sm ${authMessage.includes('Erro') ? 'text-red-600' : 'text-green-600'} mt-2`}>
@@ -566,6 +587,14 @@ const App = () => {
           </div>
         </div>
       </header>
+
+      {/* Mensagem de erro do IndexedDB, se houver */}
+      {indexedDbError && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 mb-6 rounded-lg shadow-sm" role="alert">
+          <p className="font-bold">Aviso de Modo Offline:</p>
+          <p className="text-sm">{indexedDbError}</p>
+        </div>
+      )}
 
       <main className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border-4 border-green-300 flex-grow">
         {view === 'list' && (
@@ -657,6 +686,27 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
     );
   });
 
+  // Função para exportar relatórios para JSON - REMOVIDA
+  // const handleExportReportsToJson = () => {
+  //   const reportsToExport = reports.map(report => ({
+  //     ...report,
+  //     dataVisita: new Date(report.dataVisita).toISOString().split('T')[0],
+  //     createdAt: report.createdAt?.toDate ? report.createdAt.toDate().toISOString() : undefined,
+  //     updatedAt: report.updatedAt?.toDate ? report.updatedAt.toDate().toISOString() : undefined,
+  //   }));
+
+  //   const jsonString = JSON.stringify(reportsToExport, null, 2);
+  //   const blob = new Blob([jsonString], { type: 'application/json' });
+  //   const url = URL.createObjectURL(blob);
+  //   const a = document.createElement('a');
+  //   a.href = url;
+  //   a.download = 'relatorios_lavouras_backup.json';
+  //   document.body.appendChild(a);
+  //   a.click();
+  //   document.body.removeChild(a);
+  //   URL.revokeObjectURL(url);
+  // };
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center">
@@ -693,6 +743,24 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
           </button>
         </div>
       </div>
+
+      {/* Botões de Ação Global (Novo Relatório) - Botão de Exportar Removido */}
+      <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-6">
+        <button
+          onClick={onNewReport}
+          className="flex items-center px-6 py-3 bg-green-600 text-white rounded-xl shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
+        >
+          <PlusCircle className="w-5 h-5 mr-2" />
+          Novo Relatório
+        </button>
+        {/* Botão de Exportar para JSON removido daqui */}
+      </div>
+
+      {/* Mensagem de backup online - REMOVIDA */}
+      {/* <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 mb-6 rounded-lg shadow-sm" role="alert">
+        <p className="font-bold">Backup Online Automático</p>
+        <p className="text-sm">Seus dados são automaticamente salvos e sincronizados online com o Firebase Firestore. O modo offline permite que você trabalhe sem internet e sincronize as alterações quando reconectar.</p>
+      </div> */}
 
       {filteredReports.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-xl">
