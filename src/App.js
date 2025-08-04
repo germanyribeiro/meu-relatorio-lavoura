@@ -609,7 +609,25 @@ const App = () => {
 
 const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isCardView, setIsCardView] = useState(true); // Novo estado para controlar a visualização
+  // Inicializa isCardView a partir do localStorage, com fallback para true (cartões)
+  const [isCardView, setIsCardView] = useState(() => {
+    try {
+      const storedView = localStorage.getItem('reportViewMode');
+      return storedView === 'table' ? false : true; // Se for 'table', é false; caso contrário, é true (incluindo null/undefined)
+    } catch (error) {
+      console.error("Erro ao ler do localStorage:", error);
+      return true; // Fallback para cartões em caso de erro
+    }
+  });
+
+  // Efeito para salvar a preferência no localStorage sempre que isCardView mudar
+  useEffect(() => {
+    try {
+      localStorage.setItem('reportViewMode', isCardView ? 'card' : 'table');
+    } catch (error) {
+      console.error("Erro ao salvar no localStorage:", error);
+    }
+  }, [isCardView]);
 
   const filteredReports = reports.filter(report => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
