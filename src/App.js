@@ -525,7 +525,7 @@ const App = () => {
 
   // Se autenticado, mostra o aplicativo principal
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 font-inter text-gray-800 p-4 sm:p-6 lg:p-8 flex flex-col">
       <header className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg mb-6 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-green-700 mb-2 sm:mb-0">
           🌱 Relatórios de Lavouras
@@ -551,7 +551,7 @@ const App = () => {
         </div>
       </header>
 
-      <main className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border-4 border-green-300">
+      <main className="bg-white p-4 sm:p-6 rounded-2xl shadow-lg border-4 border-green-300 flex-grow">
         {view === 'list' && (
           <ReportList
             reports={reports}
@@ -597,6 +597,12 @@ const App = () => {
       {showPhotoModal && (
         <PhotoModal imageUrl={selectedPhoto} onClose={closePhotoModal} />
       )}
+
+      {/* Rodapé */}
+      <footer className="mt-6 text-center text-gray-600 text-sm">
+        <p>Desenvolvido por Germany S. Ribeiro</p>
+        <p>v 1.0</p>
+      </footer>
     </div>
   );
 };
