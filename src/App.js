@@ -8,7 +8,7 @@ import {
   onAuthStateChanged, 
   signInWithCustomToken
 } from 'firebase/auth';
-import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, enableIndexedDbPersistence } from 'firebase/firestore'; // Importe enableIndexedDbPersistence
 
 // Importar ícones do Lucide React
 // Reintroduzido 'Save' pois é utilizado no componente ReportForm.
@@ -90,6 +90,22 @@ const App = () => {
         const app = initializeApp(firebaseConfig);
         const firestore = getFirestore(app);
         const firebaseAuth = getAuth(app);
+
+        // Tente habilitar a persistência offline do Firestore
+        try {
+          await enableIndexedDbPersistence(firestore);
+          console.log("DEBUG: Persistência offline do Firestore habilitada.");
+        } catch (err) {
+          if (err.code === 'failed-precondition') {
+            // Múltiplas abas abertas, persistência não pode ser habilitada
+            console.warn("DEBUG: Persistência offline não pode ser habilitada. Provavelmente múltiplas abas abertas.");
+          } else if (err.code === 'unimplemented') {
+            // O navegador não suporta IndexedDB (raro hoje em dia)
+            console.error("DEBUG: O navegador não suporta persistência offline.");
+          } else {
+            console.error("DEBUG: Erro ao habilitar persistência offline:", err);
+          }
+        }
 
         setDb(firestore);
         setAuth(firebaseAuth);
