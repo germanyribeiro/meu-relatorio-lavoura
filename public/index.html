@@ -1,45 +1,171 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- Garante responsividade -->
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
-      content="Aplicativo de Relatórios de Acompanhamento de Lavouras"
+      content="Web site created using create-react-app"
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Relatórios de Lavouras</title>
-    <!-- Carrega Tailwind CSS para estilização -->
+
+    <!-- Bibliotecas de Estilo e Funcionalidade (MUITO IMPORTANTE!) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Define a fonte Inter para todo o documento -->
+    <!-- jsPDF para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas para captura de tela para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
       body {
         font-family: 'Inter', sans-serif;
       }
-      /* Estilos de impressão para ocultar elementos não essenciais */
+      /* Estilos de impressão para ocultar elementos não essenciais e aplicar ABNT */
       @media print {
-        body > #root > div > header, /* Oculta o cabeçalho principal do App */
-        body > #root > div > footer, /* Oculta o rodapé principal do App */
-        body > #root > div > main > div:not(.printable-report) /* Oculta tudo dentro do 'main' que não tenha a classe 'printable-report' */
-        {
+        /* Esconde tudo no body por padrão */
+        body * {
+          visibility: hidden;
+        }
+
+        /* Torna o container principal do aplicativo visível para que o conteúdo possa ser mostrado */
+        body > #root {
+            visibility: visible;
+            display: block; /* Garante que seja um elemento de bloco */
+            width: 100%;
+            height: auto;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Torna o div principal do App visível */
+        body > #root > div {
+            visibility: visible;
+            display: block;
+            width: 100%;
+            height: auto;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Torna o cabeçalho e rodapé invisíveis */
+        body > #root > div > header,
+        body > #root > div > footer {
           display: none !important;
         }
+
+        /* Torna o main visível, mas sem seus próprios paddings/margins que podem afetar o relatório */
         body > #root > div > main {
-          margin: 0 !important;
-          padding: 0 !important;
-          width: 100% !important;
+            visibility: visible;
+            display: block;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            background-color: white !important;
         }
+
+        /* ABNT styles para o conteúdo do relatório */
         .printable-report {
+          visibility: visible !important;
           display: block !important;
+          position: static !important; /* Alterado de absolute para static */
+          left: 0 !important;
+          top: 0 !important;
           width: 100% !important;
+          min-height: 100vh !important; /* Garante que ocupe a altura total para paginação */
           margin: 0 !important;
-          padding: 0 !important;
+          padding: 0 !important; /* Reset padding aqui, as margens serão definidas por @page */
           box-shadow: none !important;
           border: none !important;
           background-color: white !important;
+          overflow: visible !important;
+
+          /* Fontes e espaçamento de linha ABNT para o conteúdo do relatório */
+          font-family: 'Arial', sans-serif !important;
+          font-size: 12pt !important;
+          line-height: 1.5 !important;
+        }
+
+        /* Margens ABNT para a página de impressão */
+        @page {
+          margin-top: 3cm;
+          margin-left: 3cm;
+          margin-bottom: 2cm;
+          margin-right: 2cm;
+        }
+
+        /* Estilos para títulos dentro do relatório */
+        .printable-report h2,
+        .printable-report h3,
+        .printable-report h4 {
+          font-family: 'Arial', sans-serif !important;
+          font-weight: bold !important;
+          margin-top: 12pt !important; /* Espaçamento antes dos títulos */
+          margin-bottom: 6pt !important; /* Espaçamento depois dos títulos */
+          text-align: center !important; /* Títulos centralizados */
+          line-height: 1.5 !important; /* Mantém o espaçamento de linha */
+        }
+        .printable-report h2 { font-size: 14pt !important; } /* Título principal do relatório */
+        .printable-report h3 { font-size: 12pt !important; } /* Títulos de seção */
+        .printable-report h4 { font-size: 10pt !important; } /* Títulos de sub-seção */
+
+
+        /* Estilos para parágrafos e blocos de texto */
+        .printable-report p,
+        .printable-report textarea,
+        .printable-report input[type="text"],
+        .printable-report input[type="date"] {
+          font-family: 'Arial', sans-serif !important;
+          font-size: 12pt !important;
+          line-height: 1.5 !important;
+          text-align: justify !important; /* Texto justificado */
+          margin-bottom: 6pt !important; /* Espaço entre parágrafos */
+          text-indent: 1.25cm !important; /* Recuo da primeira linha */
+        }
+
+        /* Remover recuo e alinhar à esquerda para rótulos e campos de entrada */
+        .printable-report label,
+        .printable-report input,
+        .printable-report textarea {
+          text-indent: 0 !important; /* Sem recuo para elementos de formulário */
+          text-align: left !important; /* Alinhar rótulos e entradas à esquerda */
+        }
+
+        /* Garantir que campos de entrada e textareas não mostrem bordas/fundos na impressão */
+        .printable-report input,
+        .printable-report textarea {
+          border: none !important;
+          background-color: transparent !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          -webkit-print-color-adjust: exact; /* Força a impressão de cores de fundo/texto */
+          color-adjust: exact;
+        }
+
+        /* Estilização específica para containers de imagem para garantir boa impressão */
+        .printable-report img {
+          max-width: 100% !important;
+          height: auto !important;
+          display: block !important;
+          margin: 10pt auto !important; /* Centralizar imagens e adicionar espaçamento vertical */
+          border: 1px solid #ccc !important; /* Opcional: borda sutil para imagens */
+        }
+
+        /* Oculta elementos com a classe 'print-hidden' */
+        .print-hidden {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Garante que o conteúdo dentro do printable-report também seja visível */
+        .printable-report * {
+            visibility: visible !important;
         }
       }
     </style>
@@ -51,11 +177,11 @@
       Este arquivo HTML é um template.
       Se você abri-lo diretamente no navegador, verá uma página vazia.
 
-      Você pode adicionar webfonts, meta tags ou ferramentas de análise a este arquivo.
-      A etapa de build irá colocar os scripts agrupados no <body/>.
+      Você pode adicionar webfonts, meta tags ou análises a este arquivo.
+      A etapa de build colocará os scripts empacotados na tag <body>.
 
-      Para começar o desenvolvimento, rode `npm start` ou `yarn start`.
-      Para criar um build de produção, use `npm run build` ou `yarn build`.
+      Para iniciar o desenvolvimento, execute `npm start` ou `yarn start`.
+      Para criar um bundle de produção, use `npm run build` ou `yarn build`.
     -->
 
     <!-- **ESTAS DUAS LINHAS SÃO CRUCIAIS PARA O PDF** -->
