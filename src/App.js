@@ -715,7 +715,7 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
       </h2>
 
       {/* Campo de filtro e botões de visualização */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 space-y-4 sm:space-y-0 sm:space-x-4 report-list-controls">
         <div className="relative w-full sm:w-auto flex-grow">
           <input
             type="text"
@@ -964,18 +964,16 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
   // };
 
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-lg">
+    <div className="p-6 bg-white rounded-2xl shadow-lg printable-report"> {/* Adicionada classe printable-report aqui */}
       <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center">
         {isEditing ? <Edit className="w-6 h-6 mr-2" /> : <FileText className="w-6 h-6 mr-2" />}
         {isEditing ? 'Editar Relatório' : 'Novo Relatório'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* O ref reportContentRef e as classes condicionais isPdfMode não afetam mais o PDF gerado */}
         <div ref={reportContentRef} className={`
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 space-y-4
-          printable-report {/* Adicionada classe para impressão */}
         `}>
           <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1229,7 +1227,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
   // };
 
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-lg">
+    <div className="p-6 bg-white rounded-2xl shadow-lg printable-report"> {/* Adicionada classe printable-report aqui */}
       <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center">
         <Eye className="w-6 h-6 mr-2" />
         Detalhes do Relatório
@@ -1238,7 +1236,6 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
-          printable-report {/* Adicionada classe para impressão */}
         `}>
         <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
