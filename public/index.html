@@ -19,6 +19,29 @@
       body {
         font-family: 'Inter', sans-serif;
       }
+      /* Estilos de impressão para ocultar elementos não essenciais */
+      @media print {
+        body > #root > div > header, /* Oculta o cabeçalho principal do App */
+        body > #root > div > footer, /* Oculta o rodapé principal do App */
+        body > #root > div > main > div:not(.printable-report) /* Oculta tudo dentro do 'main' que não tenha a classe 'printable-report' */
+        {
+          display: none !important;
+        }
+        body > #root > div > main {
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+        }
+        .printable-report {
+          display: block !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          box-shadow: none !important;
+          border: none !important;
+          background-color: white !important;
+        }
+      }
     </style>
   </head>
   <body>

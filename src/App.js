@@ -13,7 +13,7 @@ import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection
 // Importar ícones do Lucide React
 // Reintroduzido 'Save' pois é utilizado no componente ReportForm.
 // Removidos Share2, Mail, MessageCircle pois a funcionalidade de compartilhamento direto foi removida.
-import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, EyeOff, LogIn, UserPlus, LogOut, Search, LayoutGrid, Table } from 'lucide-react'; 
+import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, EyeOff, LogIn, UserPlus, LogOut, Search, LayoutGrid, Table, Printer } from 'lucide-react'; 
 
 import PropTypes from 'prop-types';
 
@@ -975,6 +975,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 space-y-4
+          printable-report {/* Adicionada classe para impressão */}
         `}>
           <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1181,6 +1182,14 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
             {loadingPdf ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
             {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
           </button>
+          <button
+            type="button"
+            onClick={() => window.print()} // Direct call to print
+            className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105"
+          >
+            <Printer className="w-5 h-5 mr-2" />
+            Imprimir Relatório
+          </button>
           {/* Botão de Compartilhar removido */}
         </div>
         {/* Exibição da mensagem de compartilhamento removida */}
@@ -1229,6 +1238,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
+          printable-report {/* Adicionada classe para impressão */}
         `}>
         <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1328,6 +1338,14 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
         >
           {loadingPdf ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : <FileText className="w-5 h-5 mr-2" />}
           {loadingPdf ? 'Gerando PDF...' : 'Gerar PDF'}
+        </button>
+        <button
+          type="button"
+          onClick={() => window.print()} // Direct call to print
+          className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105"
+        >
+          <Printer className="w-5 h-5 mr-2" />
+          Imprimir Relatório
         </button>
         {/* Botão de Compartilhar removido */}
       </div>
