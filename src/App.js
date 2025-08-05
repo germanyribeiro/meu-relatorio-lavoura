@@ -964,8 +964,8 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
   // };
 
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-lg printable-report"> {/* Adicionada classe printable-report aqui */}
-      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center">
+    <div className="p-6 bg-white rounded-2xl shadow-lg">
+      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center print-hidden"> {/* Adicionado print-hidden */}
         {isEditing ? <Edit className="w-6 h-6 mr-2" /> : <FileText className="w-6 h-6 mr-2" />}
         {isEditing ? 'Editar Relatório' : 'Novo Relatório'}
       </h2>
@@ -974,6 +974,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 space-y-4
+          printable-report {/* Adicionada classe printable-report aqui */}
         `}>
           <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1104,7 +1105,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
               Fotos do Relatório
             </h3>
             {/* isPdfMode é false aqui, então os botões aparecem */}
-            <>
+            <div className="print-hidden"> {/* Adicionado print-hidden */}
               <input
                 type="file"
                 accept="image/*"
@@ -1120,7 +1121,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
                 <PlusCircle className="w-5 h-5 mr-2" />
                 Adicionar Foto do Dispositivo
               </button>
-            </>
+            </div>
             <div className={`
               grid gap-4
               grid-cols-2 sm:grid-cols-3 md:grid-cols-4
@@ -1144,7 +1145,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
                   <button
                     type="button"
                     onClick={() => handleRemovePhoto(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 print-hidden" // Adicionado print-hidden
                     aria-label="Remover foto"
                   >
                     <XCircle className="w-4 h-4" />
@@ -1155,7 +1156,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center md:justify-end gap-4 mt-8">
+        <div className="flex flex-wrap justify-center md:justify-end gap-4 mt-8 print-hidden"> {/* Adicionado print-hidden */}
           <button
             type="button"
             onClick={onCancel}
@@ -1227,8 +1228,8 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
   // };
 
   return (
-    <div className="p-6 bg-white rounded-2xl shadow-lg printable-report"> {/* Adicionada classe printable-report aqui */}
-      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center">
+    <div className="p-6 bg-white rounded-2xl shadow-lg">
+      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center print-hidden"> {/* Adicionado print-hidden */}
         <Eye className="w-6 h-6 mr-2" />
         Detalhes do Relatório
       </h2>
@@ -1236,6 +1237,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
+          printable-report {/* Adicionada classe printable-report aqui */}
         `}>
         <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1319,7 +1321,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
         )}
       </div>
 
-      <div className="flex flex-wrap justify-center md:justify-end gap-4">
+      <div className="flex flex-wrap justify-center md:justify-end gap-4 print-hidden"> {/* Adicionado print-hidden */}
         <button
           onClick={onCancel}
           className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition duration-300 ease-in-out text-sm sm:text-base text-center"
