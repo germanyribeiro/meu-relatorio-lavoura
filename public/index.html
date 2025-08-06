@@ -1,191 +1,335 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- Garante responsividade -->
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <title>Relatórios de Lavouras</title>
-
-    <!-- Bibliotecas de Estilo e Funcionalidade (MUITO IMPORTANTE!) -->
-    <!-- Tailwind CSS -->
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Acompanhamento de Lavouras</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- jsPDF para geração de PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- html2canvas para captura de tela para PDF -->
+    <!-- jsPDF and html2canvas CDNs for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
-      body {
-        font-family: 'Inter', sans-serif;
-      }
-      /* Estilos de impressão para ocultar elementos não essenciais e aplicar ABNT */
-      @media print {
-        /* Esconde tudo no body por padrão */
-        body * {
-          visibility: hidden;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
         }
-
-        /* Torna o container principal do aplicativo visível para que o conteúdo possa ser mostrado */
-        body > #root {
-            visibility: visible;
-            display: block; /* Garante que seja um elemento de bloco */
-            width: 100%;
-            height: auto;
-            margin: 0;
-            padding: 0;
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
         }
-
-        /* Torna o div principal do App visível */
-        body > #root > div {
-            visibility: visible;
+        h1 {
+            color: #1f2937; /* Gray-800 */
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
             display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #4b5563; /* Gray-600 */
+        }
+        input, textarea, select {
             width: 100%;
-            height: auto;
-            margin: 0;
-            padding: 0;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db; /* Gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            transition: border-color 0.2s;
         }
-
-        /* Torna o cabeçalho e rodapé invisíveis */
-        body > #root > div > header,
-        body > #root > div > footer {
-          display: none !important;
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6; /* Blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
-
-        /* Torna o main visível, mas sem seus próprios paddings/margins que podem afetar o relatório */
-        body > #root > div > main {
-            visibility: visible;
-            display: block;
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            box-shadow: none !important;
-            border: none !important;
-            background-color: white !important;
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
-
-        /* ABNT styles para o conteúdo do relatório */
-        .printable-report {
-          visibility: visible !important;
-          display: block !important;
-          position: static !important; /* Alterado de absolute para static */
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          min-height: 100vh !important; /* Garante que ocupe a altura total para paginação */
-          margin: 0 !important;
-          padding: 0 !important; /* Reset padding aqui, as margens serão definidas por @page */
-          box-shadow: none !important;
-          border: none !important;
-          background-color: white !important;
-          overflow: visible !important;
-
-          /* Fontes e espaçamento de linha ABNT para o conteúdo do relatório */
-          font-family: 'Arial', sans-serif !important;
-          font-size: 12pt !important;
-          line-height: 1.5 !important;
+        button.primary {
+            background-color: #2563eb; /* Blue-600 */
+            color: #ffffff;
+            border: none;
         }
-
-        /* Margens ABNT para a página de impressão */
-        @page {
-          margin-top: 3cm;
-          margin-left: 3cm;
-          margin-bottom: 2cm;
-          margin-right: 2cm;
+        button.primary:hover {
+            background-color: #1d4ed8; /* Blue-700 */
         }
-
-        /* Estilos para títulos dentro do relatório */
-        .printable-report h2,
-        .printable-report h3,
-        .printable-report h4 {
-          font-family: 'Arial', sans-serif !important;
-          font-weight: bold !important;
-          margin-top: 12pt !important; /* Espaçamento antes dos títulos */
-          margin-bottom: 6pt !important; /* Espaçamento depois dos títulos */
-          text-align: center !important; /* Títulos centralizados */
-          line-height: 1.5 !important; /* Mantém o espaçamento de linha */
+        button.secondary {
+            background-color: #6b7280; /* Gray-500 */
+            color: #ffffff;
+            border: none;
         }
-        .printable-report h2 { font-size: 14pt !important; } /* Título principal do relatório */
-        .printable-report h3 { font-size: 12pt !important; } /* Títulos de seção */
-        .printable-report h4 { font-size: 10pt !important; } /* Títulos de sub-seção */
-
-
-        /* Estilos para parágrafos e blocos de texto */
-        .printable-report p,
-        .printable-report textarea,
-        .printable-report input[type="text"],
-        .printable-report input[type="date"] {
-          font-family: 'Arial', sans-serif !important;
-          font-size: 12pt !important;
-          line-height: 1.5 !important;
-          text-align: justify !important; /* Texto justificado */
-          margin-bottom: 6pt !important; /* Espaço entre parágrafos */
-          text-indent: 1.25cm !important; /* Recuo da primeira linha */
+        button.secondary:hover {
+            background-color: #4b5563; /* Gray-600 */
         }
-
-        /* Remover recuo e alinhar à esquerda para rótulos e campos de entrada */
-        .printable-report label,
-        .printable-report input,
-        .printable-report textarea {
-          text-indent: 0 !important; /* Sem recuo para elementos de formulário */
-          text-align: left !important; /* Alinhar rótulos e entradas à esquerda */
+        button.tertiary {
+            background-color: #d1d5db; /* Gray-300 */
+            color: #1f2937; /* Gray-800 */
+            border: none;
         }
-
-        /* Garantir que campos de entrada e textareas não mostrem bordas/fundos na impressão */
-        .printable-report input,
-        .printable-report textarea {
-          border: none !important;
-          background-color: transparent !important;
-          padding: 0 !important;
-          box-shadow: none !important;
-          -webkit-print-color-adjust: exact; /* Força a impressão de cores de fundo/texto */
-          color-adjust: exact;
+        button.tertiary:hover {
+            background-color: #9ca3af; /* Gray-400 */
         }
-
-        /* Estilização específica para containers de imagem para garantir boa impressão */
-        .printable-report img {
-          max-width: 100% !important;
-          height: auto !important;
-          display: block !important;
-          margin: 10pt auto !important; /* Centralizar imagens e adicionar espaçamento vertical */
-          border: 1px solid #ccc !important; /* Opcional: borda sutil para imagens */
+        .report-section {
+            border-top: 1px solid #e5e7eb; /* Gray-200 */
+            padding-top: 1rem;
+            margin-top: 1rem;
         }
-
-        /* Oculta elementos com a classe 'print-hidden' */
-        .print-hidden {
-            display: none !important;
-            visibility: hidden !important;
+        .report-section h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
         }
-
-        /* Garante que o conteúdo dentro do printable-report também seja visível */
-        .printable-report * {
-            visibility: visible !important;
+        .report-section p {
+            margin-bottom: 0.5rem;
+            color: #4b5563;
         }
-      }
     </style>
-  </head>
-  <body>
-    <noscript>Você precisa habilitar o JavaScript para rodar este aplicativo.</noscript>
-    <div id="root"></div>
-    <!--
-      Este arquivo HTML é um template.
-      Se você abri-lo diretamente no navegador, verá uma página vazia.
+</head>
+<body class="bg-gray-100 font-inter">
 
-      Você pode adicionar webfonts, meta tags ou análises a este arquivo.
-      A etapa de build colocará os scripts empacotados na tag <body>.
+    <div class="container bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Relatório de Acompanhamento de Lavouras</h1>
+        <form id="farmReportForm" onsubmit="event.preventDefault(); generateReport();">
 
-      Para iniciar o desenvolvimento, execute `npm start` ou `yarn start`.
-      Para criar um bundle de produção, use `npm run build` ou `yarn build`.
-    -->
+            <!-- Seção 1: Dados da Fazenda -->
+            <div class="report-section">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700">1. Dados da Fazenda</h3>
+                <div class="form-group">
+                    <label for="nomeFazenda">Nome da Fazenda</label>
+                    <input type="text" id="nomeFazenda" name="nomeFazenda" class="w-full" required>
+                </div>
+                <div class="form-group">
+                    <label for="responsavel">Responsável</label>
+                    <input type="text" id="responsavel" name="responsavel" class="w-full" required>
+                </div>
+                <div class="form-group">
+                    <label for="cultura">Cultura</label>
+                    <input type="text" id="cultura" name="cultura" class="w-full" required>
+                </div>
+                <div class="form-group">
+                    <label for="dataVisita">Data da Visita</label>
+                    <input type="date" id="dataVisita" name="dataVisita" class="w-full" required>
+                </div>
+                <div class="form-group">
+                    <label for="estagioCultura">Estágio da Cultura</label>
+                    <input type="text" id="estagioCultura" name="estagioCultura" class="w-full">
+                </div>
+            </div>
 
-    <!-- **ESTAS DUAS LINHAS SÃO CRUCIAIS PARA O PDF** -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  </body>
+            <!-- Seção 2: Condições Climáticas -->
+            <div class="report-section">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700">2. Condições Climáticas</h3>
+                <div class="form-group">
+                    <label for="condicoesClimaticas">Condições climáticas</label>
+                    <textarea id="condicoesClimaticas" name="condicoesClimaticas" class="w-full" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Seção 3: Avaliação de Pragas e Doenças -->
+            <div class="report-section">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700">3. Avaliação de Pragas e Doenças</h3>
+                <div class="form-group">
+                    <label for="pragasDoencas">Pragas e doenças identificadas</label>
+                    <textarea id="pragasDoencas" name="pragasDoencas" class="w-full" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="acoesRecomendadasPragas">Ações recomendadas</label>
+                    <textarea id="acoesRecomendadasPragas" name="acoesRecomendadasPragas" class="w-full" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Seção 4: Nutrição da Planta e Solo -->
+            <div class="report-section">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700">4. Nutrição da Planta e Solo</h3>
+                <div class="form-group">
+                    <label for="nutricaoPlantaSolo">Observações sobre nutrição</label>
+                    <textarea id="nutricaoPlantaSolo" name="nutricaoPlantaSolo" class="w-full" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="recomendacoesNutricao">Recomendações de fertilizantes/nutrientes</label>
+                    <textarea id="recomendacoesNutricao" name="recomendacoesNutricao" class="w-full" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Seção 5: Irrigação e Manejo da Água -->
+            <div class="report-section">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700">5. Irrigação e Manejo da Água</h3>
+                <div class="form-group">
+                    <label for="irrigacaoManejo">Sistema de irrigação e manejo da água</label>
+                    <textarea id="irrigacaoManejo" name="irrigacaoManejo" class="w-full" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Seção 6: Plano para Próxima Visita -->
+            <div class="report-section">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700">6. Plano para Próxima Visita</h3>
+                <div class="form-group">
+                    <label for="dataProximaVisita">Data sugerida para a próxima visita</label>
+                    <input type="date" id="dataProximaVisita" name="dataProximaVisita" class="w-full">
+                </div>
+                <div class="form-group">
+                    <label for="acoesVerificar">Ações a serem verificadas na próxima visita</label>
+                    <textarea id="acoesVerificar" name="acoesVerificar" class="w-full" rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Seção 7: Observações Adicionais -->
+            <div class="report-section">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700">7. Observações Adicionais/Comentários</h3>
+                <div class="form-group">
+                    <label for="observacoesAdicionais">Observações e comentários</label>
+                    <textarea id="observacoesAdicionais" name="observacoesAdicionais" class="w-full" rows="5"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end space-x-4">
+                <button type="button" class="tertiary" onclick="resetForm()">Limpar</button>
+                <button type="submit" class="primary">Gerar Relatório</button>
+            </div>
+        </form>
+
+        <div id="reportOutput" class="hidden mt-8 p-6 bg-gray-50 rounded-lg shadow-inner">
+            <div id="reportContent" class="prose max-w-none">
+                <!-- Report content will be dynamically inserted here -->
+            </div>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button type="button" class="secondary" onclick="generatePDF()">Gerar PDF</button>
+                <button type="button" class="primary" onclick="printReport()">Imprimir</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use window.jsPDF to access the library
+        const { jsPDF } = window.jspdf;
+
+        function generateReport() {
+            const form = document.getElementById('farmReportForm');
+            const formData = new FormData(form);
+            const reportContentDiv = document.getElementById('reportContent');
+
+            let reportHtml = `<h2 class="text-2xl font-bold mb-4">Relatório de Acompanhamento de Lavouras</h2>`;
+
+            // Seção 1
+            reportHtml += `<h3 class="text-xl font-semibold mt-6 mb-2 text-blue-700">1. Dados da Fazenda</h3>`;
+            reportHtml += `<p><strong>Nome da Fazenda:</strong> ${formData.get('nomeFazenda')}</p>`;
+            reportHtml += `<p><strong>Responsável:</strong> ${formData.get('responsavel')}</p>`;
+            reportHtml += `<p><strong>Cultura:</strong> ${formData.get('cultura')}</p>`;
+            reportHtml += `<p><strong>Data da Visita:</strong> ${formData.get('dataVisita')}</p>`;
+            reportHtml += `<p><strong>Estágio da Cultura:</strong> ${formData.get('estagioCultura') || 'N/A'}</p>`;
+
+            // Seção 2
+            reportHtml += `<h3 class="text-xl font-semibold mt-4 mb-2 text-blue-700">2. Condições Climáticas</h3>`;
+            reportHtml += `<p>${formData.get('condicoesClimaticas') || 'N/A'}</p>`;
+
+            // Seção 3
+            reportHtml += `<h3 class="text-xl font-semibold mt-4 mb-2 text-blue-700">3. Avaliação de Pragas e Doenças</h3>`;
+            reportHtml += `<p><strong>Pragas e Doenças Identificadas:</strong> ${formData.get('pragasDoencas') || 'N/A'}</p>`;
+            reportHtml += `<p><strong>Ações Recomendadas:</strong> ${formData.get('acoesRecomendadasPragas') || 'N/A'}</p>`;
+
+            // Seção 4
+            reportHtml += `<h3 class="text-xl font-semibold mt-4 mb-2 text-blue-700">4. Nutrição da Planta e Solo</h3>`;
+            reportHtml += `<p><strong>Observações sobre Nutrição:</strong> ${formData.get('nutricaoPlantaSolo') || 'N/A'}</p>`;
+            reportHtml += `<p><strong>Recomendações de Nutrição:</strong> ${formData.get('recomendacoesNutricao') || 'N/A'}</p>`;
+
+            // Seção 5
+            reportHtml += `<h3 class="text-xl font-semibold mt-4 mb-2 text-blue-700">5. Irrigação e Manejo da Água</h3>`;
+            reportHtml += `<p>${formData.get('irrigacaoManejo') || 'N/A'}</p>`;
+
+            // Seção 6
+            reportHtml += `<h3 class="text-xl font-semibold mt-4 mb-2 text-blue-700">6. Plano para Próxima Visita</h3>`;
+            reportHtml += `<p><strong>Data Sugerida para Próxima Visita:</strong> ${formData.get('dataProximaVisita') || 'N/A'}</p>`;
+            reportHtml += `<p><strong>Ações a Serem Verificadas na Próxima Visita:</strong> ${formData.get('acoesVerificar') || 'N/A'}</p>`;
+
+            // Seção 7
+            reportHtml += `<h3 class="text-xl font-semibold mt-4 mb-2 text-blue-700">7. Observações Adicionais/Comentários</h3>`;
+            reportHtml += `<p>${formData.get('observacoesAdicionais') || 'N/A'}</p>`;
+
+            reportContentDiv.innerHTML = reportHtml;
+            document.getElementById('reportOutput').style.display = 'block';
+        }
+
+        // The generatePDF function was updated to use jsPDF and html2canvas.
+        function generatePDF() {
+            const reportElement = document.getElementById('reportContent');
+            if (!reportElement) {
+                console.error("ERRO: Elemento do relatório não encontrado.");
+                return;
+            }
+
+            html2canvas(reportElement, {
+                scale: 2, // Improves image quality
+                useCORS: true
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+
+                let position = 0;
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save("relatorio-acompanhamento-lavouras.pdf");
+            }).catch(error => {
+                console.error("ERRO ao gerar o PDF:", error);
+                alert("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
+            });
+        }
+
+        function printReport() {
+            const printContent = document.getElementById('reportOutput').innerHTML;
+            const originalBody = document.body.innerHTML;
+
+            // Temporarily replace body content with report content for printing
+            document.body.innerHTML = `
+                <div style="font-family: 'Inter', sans-serif; padding: 20px;">
+                    ${printContent}
+                </div>
+            `;
+            window.print();
+            document.body.innerHTML = originalBody; // Restore original content
+            location.reload(); // Reload to ensure all event listeners are reattached
+        }
+
+        function resetForm() {
+            document.getElementById('farmReportForm').reset();
+            document.getElementById('reportOutput').style.display = 'none';
+        }
+    </script>
+</body>
 </html>
