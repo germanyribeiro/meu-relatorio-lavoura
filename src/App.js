@@ -11,8 +11,6 @@ import {
 import { getFirestore, doc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, enableIndexedDbPersistence } from 'firebase/firestore'; 
 
 // Importar ícones do Lucide React
-// Reintroduzido 'Save' pois é utilizado no componente ReportForm.
-// Removidos Share2, Mail, MessageCircle pois a funcionalidade de compartilhamento direto foi removida.
 import { PlusCircle, Edit, Trash2, List, FileText, XCircle, Camera, Save, Loader2, Eye, EyeOff, LogIn, UserPlus, LogOut, Search, LayoutGrid, Table, Printer } from 'lucide-react'; 
 
 import PropTypes from 'prop-types';
@@ -68,11 +66,8 @@ const App = () => {
   const [indexedDbError, setIndexedDbError] = useState(null); // NOVO ESTADO PARA ERROS DO INDEXEDDB
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState('');
-  // isPdfMode não é mais necessário para controle de estilo no HTML, mas pode ser útil para o loadingPdf
   const [isPdfMode, setIsPdfMode] = useState(false); 
   const [loadingPdf, setLoadingPdf] = useState(false);
-  // shareMessage removido pois a funcionalidade de compartilhamento direto foi removida.
-  // const [shareMessage, setShareMessage] = useState(null); 
 
   // Estados para autenticação
   const [email, setEmail] = useState('');
@@ -313,14 +308,13 @@ const App = () => {
     console.log("DEBUG: Função generatePdfFromReportData iniciada (modo texto).");
     if (typeof window.jspdf === 'undefined') {
       console.error("ERRO CRÍTICO: Biblioteca jsPDF não carregada. Verifique seu public/index.html e a conexão de internet.");
-      // Não usar alert(), mas setar um erro na UI
       setErrorFunc("Erro: A biblioteca jsPDF não foi carregada. Verifique o console do navegador.");
       setLoadingPdfFunc(false);
       return;
     }
 
     setLoadingPdfFunc(true);
-    setIsPdfModeFunc(true); // Manter para indicar o estado de geração de PDF
+    setIsPdfModeFunc(true);
 
     try {
       const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
@@ -337,106 +331,138 @@ const App = () => {
       };
 
       // Título Principal
-      pdf.setFontSize(16); // Título do documento
+      pdf.setFontSize(16);
       pdf.text("Relatório de Acompanhamento de Lavoura", 105, yPos, { align: 'center' });
       yPos += 10;
       addPageIfNeeded();
 
-      // Seção: Informações da Visita
-      pdf.setFontSize(11); // Títulos de seção (ajustado para 11pt)
-      pdf.text("Informações da Visita", margin, yPos);
-      yPos += lineHeight * 1.5;
-      addPageIfNeeded();
-
-      pdf.setFontSize(9); // Texto do corpo (ajustado para 9pt)
-      const fields = [
-        { label: "Nome da Propriedade:", value: reportData.propriedade },
-        { label: "Nome da Lavoura:", value: reportData.lavoura },
-        { label: "Data da Visita:", value: new Date(reportData.dataVisita).toLocaleDateString('pt-BR') },
-        { label: "Condições Climáticas:", value: reportData.condicoesClimaticas },
-        { label: "Responsável Técnico:", value: reportData.responsavelTecnico }
-      ];
-
-      fields.forEach(field => {
-        const text = `${field.label} ${field.value}`;
-        const splitText = pdf.splitTextToSize(text, maxLineWidth);
-        pdf.text(splitText, margin, yPos);
-        yPos += splitText.length * lineHeight;
+      // Funções auxiliares para adicionar texto com quebra de linha e rótulos
+      const addSectionTitle = (title) => {
+        pdf.setFontSize(11);
+        pdf.text(title, margin, yPos);
+        yPos += lineHeight * 1.5;
         addPageIfNeeded();
-      });
+        pdf.setFontSize(9); // Reset para texto do corpo
+      };
 
-      yPos += lineHeight; // Espaçamento extra entre seções
+      const addField = (label, value) => {
+        if (value) {
+          const text = `${label} ${value}`;
+          const splitText = pdf.splitTextToSize(text, maxLineWidth);
+          pdf.text(splitText, margin, yPos);
+          yPos += splitText.length * lineHeight;
+          addPageIfNeeded();
+        }
+      };
+
+      // 1. Dados da Visita e do Técnico
+      addSectionTitle("1. Dados da Visita e do Técnico");
+      addField("Data da Visita:", new Date(reportData.dataVisita).toLocaleDateString('pt-BR'));
+      addField("Hora da Visita:", reportData.horaVisita);
+      addField("Nome do Técnico/Responsável:", reportData.nomeTecnico);
+      yPos += lineHeight;
       addPageIfNeeded();
 
-      // Seção: Observações Técnicas
-      pdf.setFontSize(11); // Títulos de seção (ajustado para 11pt)
-      pdf.text("Observações Técnicas", margin, yPos);
-      yPos += lineHeight * 1.5;
+      // 2. Dados da Propriedade
+      addSectionTitle("2. Dados da Propriedade");
+      addField("Nome da Propriedade:", reportData.nomePropriedade);
+      addField("Contratante:", reportData.contratante);
+      addField("Localização:", reportData.localizacao);
+      addField("Cultura(s) Acompanhada(s):", reportData.cultura);
+      addField("Área Total da(s) Lavouras Visitada(s) (ha/alqueires):", reportData.areaTotal);
+      yPos += lineHeight;
       addPageIfNeeded();
 
-      pdf.setFontSize(9); // Texto do corpo (ajustado para 9pt)
-      const obsFields = [
-        { label: "Estágio Fenológico Observado:", value: reportData.estagioFenologico },
-        { label: "Observações Gerais da Lavoura:", value: reportData.observacoesGerais },
-        { label: "Problemas Identificados (Pragas, Doenças, Daninhas, etc.):", value: reportData.problemasIdentificados },
-        { label: "Orientações Técnicas Fornecidas:", value: reportData.orientacoesTecnicas },
-        { label: "Padrão de Qualidade e Potencial Produtivo Estimado:", value: reportData.potencialProdutivo }
-      ];
+      // 3. Observações Gerais da Lavoura
+      addSectionTitle("3. Observações Gerais da Lavoura");
+      addField("Estágio Fenológico Atual:", reportData.estagioFenologico);
+      addField("Condições Climáticas no Período:", reportData.condicoesClimaticas);
+      addField("Observações Visuais:", reportData.observacoesVisuais);
+      yPos += lineHeight;
+      addPageIfNeeded();
 
-      obsFields.forEach(field => {
-        const text = `${field.label} ${field.value}`;
-        const splitText = pdf.splitTextToSize(text, maxLineWidth);
-        pdf.text(splitText, margin, yPos);
-        yPos += splitText.length * lineHeight;
-        addPageIfNeeded();
-      });
+      // 4. Avaliação da Qualidade da Lavoura
+      addSectionTitle("4. Avaliação da Qualidade da Lavoura");
+      addField("Pragas Identificadas (Nome, Nível de Infestação):", reportData.pragasIdentificadas);
+      addField("Doenças Identificadas (Nome, Nível de Incidência):", reportData.doencasIdentificadas);
+      addField("Déficits Nutricionais (Sintomas, Deficiência Suspeita):", reportData.deficitNutricionais);
+      addField("Controle de Plantas Daninhas (Eficiência, Espécies Predominantes):", reportData.controleDandinha);
+      addField("Aspectos Físicos do Solo:", reportData.aspectosSolo);
+      addField("Outras Observações de Qualidade:", reportData.outrasQualidade);
+      yPos += lineHeight;
+      addPageIfNeeded();
 
-      yPos += lineHeight; // Espaçamento extra entre seções
+      // 5. Potencial Produtivo da Lavoura
+      addSectionTitle("5. Potencial Produtivo da Lavoura");
+      addField("Estimativa de Produção (Atual/Revisada):", reportData.estimativaProducao);
+      addField("Fatores Limitantes Observados:", reportData.fatoresLimitantes);
+      addField("Fatores Favoráveis Observados:", reportData.fatoresFavoraveis);
+      yPos += lineHeight;
+      addPageIfNeeded();
+
+      // 6. Orientações Técnicas Fornecidas ao Corpo Gerencial
+      addSectionTitle("6. Orientações Técnicas Fornecidas ao Corpo Gerencial");
+      addField("Recomendações para Próximos Dias/Semana:", reportData.recomendacoesProximosDias);
+      addField("Manejo Fitossanitário (Produto, Dose, Momento):", reportData.manejoFitossanitario);
+      addField("Manejo Nutricional (Fertilizante, Dose, Momento):", reportData.manejoNutricional);
+      addField("Manejo Cultural (Rotação, Preparo de Solo, etc.):", reportData.manejoCultural);
+      addField("Outras Recomendações:", reportData.outrasRecomendacoes);
+      yPos += lineHeight;
+      addPageIfNeeded();
+
+      // 7. Próximos Passos e Ações de Acompanhamento
+      addSectionTitle("7. Próximos Passos e Ações de Acompanhamento");
+      addField("Data Sugerida para Próxima Visita:", reportData.dataProximaVisita);
+      addField("Ações a Serem Verificadas na Próxima Visita:", reportData.acoesVerificar);
+      yPos += lineHeight;
+      addPageIfNeeded();
+
+      // 8. Observações Adicionais/Comentários
+      addSectionTitle("8. Observações Adicionais/Comentários");
+      addField("", reportData.observacoesAdicionais); // Não tem rótulo específico para este campo
+      yPos += lineHeight;
       addPageIfNeeded();
 
       // Seção: Fotos
       if (reportData.fotos && reportData.fotos.length > 0) {
-        pdf.setFontSize(10); // Título de subseção (ajustado para 10pt)
+        pdf.setFontSize(10);
         pdf.text("Fotos", margin, yPos);
         yPos += lineHeight * 1.5;
         addPageIfNeeded();
 
-        const imgWidth = 20; // Largura do ícone em mm
-        const imgHeight = 20; // Altura do ícone em mm
-        const imgMargin = 5; // Margem entre ícones
+        const imgWidth = 20;
+        const imgHeight = 20;
+        const imgMargin = 5;
         let currentX = margin;
 
         for (const photoUrl of reportData.fotos) {
-          addPageIfNeeded(); // Verifica se há espaço antes de adicionar a imagem
-          if (currentX + imgWidth > 210 - margin) { // Se não houver espaço na linha atual
+          addPageIfNeeded();
+          if (currentX + imgWidth > 210 - margin) {
             currentX = margin;
             yPos += imgHeight + imgMargin;
             addPageIfNeeded();
           }
 
-          // Adicionar imagem
           try {
             pdf.addImage(photoUrl, 'PNG', currentX, yPos, imgWidth, imgHeight);
           } catch (imgError) {
             console.error("Erro ao adicionar imagem ao PDF:", imgError);
-            // Opcional: Adicionar um texto de placeholder se a imagem falhar
             pdf.setFontSize(8);
             pdf.text("Erro na imagem", currentX, yPos + imgHeight / 2, { align: 'center' });
-            pdf.setFontSize(9); // Resetar fonte para o corpo
+            pdf.setFontSize(9);
           }
           currentX += imgWidth + imgMargin;
         }
-        yPos += imgHeight + lineHeight; // Espaço após as fotos
+        yPos += imgHeight + lineHeight;
         addPageIfNeeded();
       }
 
-      const filename = `Relatorio_Lavoura_${reportData.propriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
+      const filename = `Relatorio_Lavoura_${reportData.nomePropriedade.replace(/\s/g, '_')}_${reportData.dataVisita}.pdf`;
       pdf.save(filename);
       console.log("DEBUG: PDF salvo com sucesso (ou tentativa de download iniciada).");
 
     } catch (error) {
       console.error("ERRO DETALHADO DURANTE A GERAÇÃO DO PDF:", error);
-      // Não usar alert(), mas setar um erro na UI
       setErrorFunc(`Erro ao gerar PDF: ${error.message}. Verifique o console do navegador.`);
     } finally {
       setLoadingPdfFunc(false);
@@ -445,18 +471,6 @@ const App = () => {
     }
   }, []);
 
-  // handleShareReport removido pois a funcionalidade de compartilhamento direto foi removida.
-  // const handleShareReport = useCallback(async (reportData) => {
-  //   setShareMessage({
-  //       type: 'prompt',
-  //       text: 'Para compartilhar o PDF, primeiro clique em "Gerar PDF" para baixar o arquivo. Depois, use os links abaixo para enviar o **arquivo baixado**:',
-  //       emailLink: `mailto:?subject=${encodeURIComponent(`Relatório de Lavoura: ${reportData.propriedade} - ${reportData.lavoura}`)}&body=${encodeURIComponent(`Olá,\n\nSegue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}.\n\nPor favor, anexe o PDF que você acabou de baixar.`)}`,
-  //       whatsappLink: `https://wa.me/?text=${encodeURIComponent(`Olá! Segue o relatório de acompanhamento da lavoura ${reportData.lavoura} na propriedade ${reportData.propriedade}, visitada em ${new Date(reportData.dataVisita).toLocaleDateString('pt-BR')}. Por favor, anexe o PDF que você acabou de baixar.`)}`
-  //   });
-  //   setTimeout(() => setShareMessage(null), 15000);
-  // }, []);
-
-  // eslint-disable-next-line no-unused-vars
   const openPhotoModal = (photoUrl) => {
     setSelectedPhoto(photoUrl);
     setShowPhotoModal(true);
@@ -613,13 +627,11 @@ const App = () => {
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             isEditing={view === 'edit'}
             onGeneratePdf={generatePdfFromReportData}
-            // onShareReport removido
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
             setIsPdfMode={setIsPdfMode} 
             setError={setError} 
-            // shareMessage removido
           />
         )}
         {view === 'view' && currentReport && (
@@ -627,13 +639,11 @@ const App = () => {
             report={currentReport}
             onCancel={() => { setView('list'); setCurrentReport(null); }}
             onGeneratePdf={generatePdfFromReportData}
-            // onShareReport removido
             isPdfMode={isPdfMode}
             loadingPdf={loadingPdf}
             setLoadingPdf={setLoadingPdf}
             setIsPdfMode={setIsPdfMode} 
             setError={setError} 
-            // shareMessage removido
           />
         )}
       </main>
@@ -679,33 +689,12 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
     const reportDate = new Date(report.dataVisita).toLocaleDateString('pt-BR');
 
     return (
-      report.propriedade.toLowerCase().includes(lowerCaseSearchTerm) ||
-      report.lavoura.toLowerCase().includes(lowerCaseSearchTerm) ||
+      report.nomePropriedade.toLowerCase().includes(lowerCaseSearchTerm) ||
+      report.cultura.toLowerCase().includes(lowerCaseSearchTerm) ||
       reportDate.includes(lowerCaseSearchTerm) ||
-      (report.responsavelTecnico && report.responsavelTecnico.toLowerCase().includes(lowerCaseSearchTerm))
+      (report.nomeTecnico && report.nomeTecnico.toLowerCase().includes(lowerCaseSearchTerm))
     );
   });
-
-  // Função para exportar relatórios para JSON - REMOVIDA
-  // const handleExportReportsToJson = () => {
-  //   const reportsToExport = reports.map(report => ({
-  //     ...report,
-  //     dataVisita: new Date(report.dataVisita).toISOString().split('T')[0],
-  //     createdAt: report.createdAt?.toDate ? report.createdAt.toDate().toISOString() : undefined,
-  //     updatedAt: report.updatedAt?.toDate ? report.updatedAt.toDate().toISOString() : undefined,
-  //   }));
-
-  //   const jsonString = JSON.stringify(reportsToExport, null, 2);
-  //   const blob = new Blob([jsonString], { type: 'application/json' });
-  //   const url = URL.createObjectURL(blob);
-  //   const a = document.createElement('a');
-  //   a.href = url;
-  //   a.download = 'relatorios_lavouras_backup.json';
-  //   document.body.appendChild(a);
-  //   a.click();
-  //   document.body.removeChild(a);
-  //   URL.revokeObjectURL(url);
-  // };
 
   return (
     <div>
@@ -719,7 +708,7 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
         <div className="relative w-full sm:w-auto flex-grow">
           <input
             type="text"
-            placeholder="Filtrar por propriedade, lavoura, data ou responsável"
+            placeholder="Filtrar por propriedade, cultura, data ou responsável"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"
@@ -744,24 +733,6 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
         </div>
       </div>
 
-      {/* Botões de Ação Global (Novo Relatório) - Botão de Exportar Removido */}
-      {/* O botão "Novo Relatório" foi movido para o cabeçalho principal do App */}
-      {/* <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-6">
-        <button
-          onClick={onNewReport}
-          className="flex items-center px-6 py-3 bg-green-600 text-white rounded-xl shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
-        >
-          <PlusCircle className="w-5 h-5 mr-2" />
-          Novo Relatório
-        </button>
-      </div> */}
-
-      {/* Mensagem de backup online - REMOVIDA */}
-      {/* <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 mb-6 rounded-lg shadow-sm" role="alert">
-        <p className="font-bold">Backup Online Automático</p>
-        <p className="text-sm">Seus dados são automaticamente salvos e sincronizados online com o Firebase Firestore. O modo offline permite que você trabalhe sem internet e sincronize as alterações quando reconectar.</p>
-      </div> */}
-
       {filteredReports.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-xl">
           <p className="text-lg text-gray-600 mb-4">Nenhum relatório encontrado. Comece criando um novo!</p>
@@ -779,10 +750,10 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
             {filteredReports.map((report) => (
               <div key={report.id} className="bg-white p-6 rounded-xl shadow-lg border border-green-100 hover:shadow-xl transition duration-300 ease-in-out flex flex-col justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-green-700 mb-2 truncate">{report.propriedade}</h3>
-                  <p className="text-lg font-medium text-gray-800 mb-3">{report.lavoura}</p>
+                  <h3 className="text-xl font-semibold text-green-700 mb-2 truncate">{report.nomePropriedade}</h3>
+                  <p className="text-lg font-medium text-gray-800 mb-3">{report.cultura}</p>
                   <p className="text-sm text-gray-600 mb-1">Data: {new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
-                  <p className="text-sm text-gray-600">Responsável: {report.responsavelTecnico || 'N/A'}</p>
+                  <p className="text-sm text-gray-600">Responsável: {report.nomeTecnico || 'N/A'}</p>
                 </div>
                 <div className="flex justify-end space-x-3 mt-4">
                   <button
@@ -822,7 +793,7 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
                     Propriedade
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Lavoura
+                    Cultura
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Data da Visita
@@ -839,16 +810,16 @@ const ReportList = ({ reports, onEdit, onDelete, onNewReport, onViewReport }) =>
                 {filteredReports.map((report) => (
                   <tr key={report.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {report.propriedade}
+                      {report.nomePropriedade}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {report.lavoura}
+                      {report.cultura}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                       {new Date(report.dataVisita).toLocaleDateString('pt-BR')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {report.responsavelTecnico || 'N/A'}
+                      {report.nomeTecnico || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
@@ -898,32 +869,63 @@ ReportList.propTypes = {
   onViewReport: PropTypes.func.isRequired,
 };
 
-const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onShareReport, */ /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError /*, shareMessage */ }) => { // onShareReport e shareMessage removidos
+const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
   const [formData, setFormData] = useState({
-    propriedade: '',
-    lavoura: '',
-    dataVisita: new Date().toISOString().split('T')[0], // Padrão para hoje
-    condicoesClimaticas: '',
+    // 1. Dados da Visita e do Técnico
+    dataVisita: new Date().toISOString().split('T')[0],
+    horaVisita: new Date().toTimeString().split(' ')[0].substring(0, 5), // Default to current time
+    nomeTecnico: '',
+
+    // 2. Dados da Propriedade
+    nomePropriedade: '',
+    contratante: '',
+    localizacao: '',
+    cultura: '',
+    areaTotal: '',
+
+    // 3. Observações Gerais da Lavoura
     estagioFenologico: '',
-    observacoesGerais: '',
-    problemasIdentificados: '',
-    orientacoesTecnicas: '',
-    potencialProdutivo: '',
-    responsavelTecnico: '', // Novo campo
-    fotos: [], // Array de URLs de imagem
+    condicoesClimaticas: '',
+    observacoesVisuais: '',
+
+    // 4. Avaliação da Qualidade da Lavoura
+    pragasIdentificadas: '',
+    doencasIdentificadas: '',
+    deficitNutricionais: '',
+    controleDandinha: '',
+    aspectosSolo: '',
+    outrasQualidade: '',
+
+    // 5. Potencial Produtivo da Lavoura
+    estimativaProducao: '',
+    fatoresLimitantes: '',
+    fatoresFavoraveis: '',
+
+    // 6. Orientações Técnicas Fornecidas ao Corpo Gerencial
+    recomendacoesProximosDias: '',
+    manejoFitossanitario: '',
+    manejoNutricional: '',
+    manejoCultural: '',
+    outrasRecomendacoes: '',
+
+    // 7. Próximos Passos e Ações de Acompanhamento
+    dataProximaVisita: '',
+    acoesVerificar: '',
+
+    // 8. Observações Adicionais/Comentários
+    observacoesAdicionais: '',
+
+    fotos: [],
     ...report, // Preenche se estiver editando
   });
 
-  // reportContentRef não é mais usado para geração de PDF, mas é mantido para o layout da tela
-  const reportContentRef = useRef(null); 
-  const fileInputRef = useRef(null); // Referência para o input de arquivo
+  const fileInputRef = useRef(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Função para lidar com a seleção de arquivo
   const handleFileChange = (e) => {
     const files = e.target.files;
     if (files.length > 0) {
@@ -932,10 +934,10 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
       reader.onloadend = () => {
         setFormData(prev => ({
           ...prev,
-          fotos: [...prev.fotos, reader.result] // Adiciona a imagem como Data URL
+          fotos: [...prev.fotos, reader.result]
         }));
       };
-      reader.readAsDataURL(file); // Lê o arquivo como Data URL
+      reader.readAsDataURL(file);
     }
   };
 
@@ -952,151 +954,165 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
   };
 
   const handleGeneratePdfClick = async () => {
-    console.log("DEBUG: Botão Gerar PDF clicado no ReportForm.");
-    // Passamos apenas os dados do formulário, pois a geração agora é baseada em texto
-    setLoadingPdf(true); // Ativa o estado de carregamento do PDF
+    setLoadingPdf(true);
     await onGeneratePdf(formData, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
-  // handleShareClick removido
-  // const handleShareClick = () => {
-  //   onShareReport(formData); // Chama a função de compartilhamento
-  // };
-
   return (
     <div className="p-6 bg-white rounded-2xl shadow-lg">
-      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center print-hidden"> {/* Adicionado print-hidden */}
+      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center print-hidden">
         {isEditing ? <Edit className="w-6 h-6 mr-2" /> : <FileText className="w-6 h-6 mr-2" />}
         {isEditing ? 'Editar Relatório' : 'Novo Relatório'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div ref={reportContentRef} className={`
+        <div className={`
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 space-y-4
-          printable-report {/* Adicionada classe printable-report aqui */}
+          printable-report
         `}>
-          <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
+          {/* Título Principal do Relatório */}
+          <h2 className="text-xl font-bold mb-4 text-center">Relatório de Acompanhamento de Lavouras</h2>
+
+          {/* Seção 1: Dados da Visita e do Técnico */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">1. Dados da Visita e do Técnico</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="dataVisita" className="block font-semibold text-gray-700 mb-1 text-lg">Data da Visita:</label>
+              <input type="date" id="dataVisita" name="dataVisita" value={formData.dataVisita} onChange={handleChange} required className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
+            </div>
+            <div>
+              <label htmlFor="horaVisita" className="block font-semibold text-gray-700 mb-1 text-lg">Hora da Visita:</label>
+              <input type="time" id="horaVisita" name="horaVisita" value={formData.horaVisita} onChange={handleChange} required className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
+            </div>
+            <div>
+              <label htmlFor="nomeTecnico" className="block font-semibold text-gray-700 mb-1 text-lg">Nome do Técnico/Responsável:</label>
+              <input type="text" id="nomeTecnico" name="nomeTecnico" value={formData.nomeTecnico} onChange={handleChange} required placeholder="Ex: João Silva" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
+            </div>
+          </div>
+
+          {/* Seção 2: Dados da Propriedade */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">2. Dados da Propriedade</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="propriedade" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Nome da Propriedade:</label>
-              <input
-                type="text"
-                id="propriedade"
-                name="propriedade"
-                value={formData.propriedade}
-                onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-              />
+              <label htmlFor="nomePropriedade" className="block font-semibold text-gray-700 mb-1 text-lg">Nome da Propriedade:</label>
+              <input type="text" id="nomePropriedade" name="nomePropriedade" value={formData.nomePropriedade} onChange={handleChange} required placeholder="Ex: Fazenda Boa Esperança" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
             </div>
             <div>
-              <label htmlFor="lavoura" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Nome da Lavoura:</label>
-              <input
-                type="text"
-                id="lavoura"
-                name="lavoura"
-                value={formData.lavoura}
-                onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-              />
+              <label htmlFor="contratante" className="block font-semibold text-gray-700 mb-1 text-lg">Contratante:</label>
+              <input type="text" id="contratante" name="contratante" value={formData.contratante} onChange={handleChange} required placeholder="Ex: Agropecuária XYZ" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
             </div>
             <div>
-              <label htmlFor="dataVisita" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Data da Visita:</label>
-              <input
-                type="date"
-                id="dataVisita"
-                name="dataVisita"
-                value={formData.dataVisita}
-                onChange={handleChange}
-                required
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-              />
+              <label htmlFor="localizacao" className="block font-semibold text-gray-700 mb-1 text-lg">Localização:</label>
+              <input type="text" id="localizacao" name="localizacao" value={formData.localizacao} onChange={handleChange} required placeholder="Ex: Londrina/PR" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
             </div>
             <div>
-              <label htmlFor="condicoesClimaticas" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Condições Climáticas:</label>
-              <input
-                type="text"
-                id="condicoesClimaticas"
-                name="condicoesClimaticas"
-                value={formData.condicoesClimaticas}
-                onChange={handleChange}
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-              />
+              <label htmlFor="cultura" className="block font-semibold text-gray-700 mb-1 text-lg">Cultura(s) Acompanhada(s):</label>
+              <input type="text" id="cultura" name="cultura" value={formData.cultura} onChange={handleChange} required placeholder="Ex: Soja, Milho" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
+            </div>
+            <div className="md:col-span-2">
+              <label htmlFor="areaTotal" className="block font-semibold text-gray-700 mb-1 text-lg">Área Total da(s) Lavouras Visitada(s) (ha/alqueires):</label>
+              <input type="text" id="areaTotal" name="areaTotal" value={formData.areaTotal} onChange={handleChange} required placeholder="Ex: 150 ha" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
+            </div>
+          </div>
+
+          {/* Seção 3: Observações Gerais da Lavoura */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">3. Observações Gerais da Lavoura</h3>
+          <div>
+            <label htmlFor="estagioFenologico" className="block font-semibold text-gray-700 mb-1 text-lg">Estágio Fenológico Atual:</label>
+            <input type="text" id="estagioFenologico" name="estagioFenologico" value={formData.estagioFenologico} onChange={handleChange} placeholder="Ex: V3, R1, Florescimento" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
+          </div>
+          <div>
+            <label htmlFor="condicoesClimaticas" className="block font-semibold text-gray-700 mb-1 text-lg">Condições Climáticas no Período:</label>
+            <textarea id="condicoesClimaticas" name="condicoesClimaticas" rows="3" value={formData.condicoesClimaticas} onChange={handleChange} placeholder="Ex: Chuvas regulares, seca, altas temperaturas" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="observacoesVisuais" className="block font-semibold text-gray-700 mb-1 text-lg">Observações Visuais:</label>
+            <textarea id="observacoesVisuais" name="observacoesVisuais" rows="3" value={formData.observacoesVisuais} onChange={handleChange} placeholder="Ex: Vigor da planta, coloração, uniformidade" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+
+          {/* Seção 4: Avaliação da Qualidade da Lavoura */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">4. Avaliação da Qualidade da Lavoura</h3>
+          <div>
+            <label htmlFor="pragasIdentificadas" className="block font-semibold text-gray-700 mb-1 text-lg">Pragas Identificadas (Nome, Nível de Infestação):</label>
+            <textarea id="pragasIdentificadas" name="pragasIdentificadas" rows="3" value={formData.pragasIdentificadas} onChange={handleChange} placeholder="Ex: Lagarta da soja (média), Percevejo (baixa)" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="doencasIdentificadas" className="block font-semibold text-gray-700 mb-1 text-lg">Doenças Identificadas (Nome, Nível de Incidência):</label>
+            <textarea id="doencasIdentificadas" name="doencasIdentificadas" rows="3" value={formData.doencasIdentificadas} onChange={handleChange} placeholder="Ex: Ferrugem asiática (incipiente), Mancha alvo (baixa)" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="deficitNutricionais" className="block font-semibold text-gray-700 mb-1 text-lg">Déficits Nutricionais (Sintomas, Deficiência Suspeita):</label>
+            <textarea id="deficitNutricionais" name="deficitNutricionais" rows="3" value={formData.deficitNutricionais} onChange={handleChange} placeholder="Ex: Amarelamento das folhas mais velhas (deficiência de N)" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="controleDandinha" className="block font-semibold text-gray-700 mb-1 text-lg">Controle de Plantas Daninhas (Eficiência, Espécies Predominantes):</label>
+            <textarea id="controleDandinha" name="controleDandinha" rows="3" value={formData.controleDandinha} onChange={handleChange} placeholder="Ex: Bom controle, mas com escapes de buva" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="aspectosSolo" className="block font-semibold text-gray-700 mb-1 text-lg">Aspectos Físicos do Solo:</label>
+            <textarea id="aspectosSolo" name="aspectosSolo" rows="3" value={formData.aspectosSolo} onChange={handleChange} placeholder="Ex: Boa estrutura, sem compactação aparente" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="outrasQualidade" className="block font-semibold text-gray-700 mb-1 text-lg">Outras Observações de Qualidade:</label>
+            <textarea id="outrasQualidade" name="outrasQualidade" rows="3" value={formData.outrasQualidade} onChange={handleChange} placeholder="Ex: Qualidade da aplicação de insumos, manejo da irrigação" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+
+          {/* Seção 5: Potencial Produtivo da Lavoura */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">5. Potencial Produtivo da Lavoura</h3>
+          <div>
+            <label htmlFor="estimativaProducao" className="block font-semibold text-gray-700 mb-1 text-lg">Estimativa de Produção (Atual/Revisada):</label>
+            <input type="text" id="estimativaProducao" name="estimativaProducao" value={formData.estimativaProducao} onChange={handleChange} placeholder="Ex: 65 sacas/hectare" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
+          </div>
+          <div>
+            <label htmlFor="fatoresLimitantes" className="block font-semibold text-gray-700 mb-1 text-lg">Fatores Limitantes Observados:</label>
+            <textarea id="fatoresLimitantes" name="fatoresLimitantes" rows="3" value={formData.fatoresLimitantes} onChange={handleChange} placeholder="Ex: Estresse hídrico, alta pressão de pragas" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="fatoresFavoraveis" className="block font-semibold text-gray-700 mb-1 text-lg">Fatores Favoráveis Observados:</label>
+            <textarea id="fatoresFavoraveis" name="fatoresFavoraveis" rows="3" value={formData.fatoresFavoraveis} onChange={handleChange} placeholder="Ex: Bom desenvolvimento vegetativo, bom pegamento de flor/fruto" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+
+          {/* Seção 6: Orientações Técnicas Fornecidas ao Corpo Gerencial */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">6. Orientações Técnicas Fornecidas ao Corpo Gerencial</h3>
+          <div>
+            <label htmlFor="recomendacoesProximosDias" className="block font-semibold text-gray-700 mb-1 text-lg">Recomendações para Próximos Dias/Semana:</label>
+            <textarea id="recomendacoesProximosDias" name="recomendacoesProximosDias" rows="3" value={formData.recomendacoesProximosDias} onChange={handleChange} placeholder="Ex: Monitoramento diário de pragas, aplicação de fungicida" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="manejoFitossanitario" className="block font-semibold text-gray-700 mb-1 text-lg">Manejo Fitossanitário (Produto, Dose, Momento):</label>
+            <textarea id="manejoFitossanitario" name="manejoFitossanitario" rows="3" value={formData.manejoFitossanitario} onChange={handleChange} placeholder="Ex: Glifosato (1.5 L/ha) para daninhas, Chlorpyrifos (0.8 L/ha) para lagartas" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="manejoNutricional" className="block font-semibold text-gray-700 mb-1 text-lg">Manejo Nutricional (Fertilizante, Dose, Momento):</label>
+            <textarea id="manejoNutricional" name="manejoNutricional" rows="3" value={formData.manejoNutricional} onChange={handleChange} placeholder="Ex: Ureia (100 kg/ha) em cobertura" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="manejoCultural" className="block font-semibold text-gray-700 mb-1 text-lg">Manejo Cultural (Rotação, Preparo de Solo, etc.):</label>
+            <textarea id="manejoCultural" name="manejoCultural" rows="3" value={formData.manejoCultural} onChange={handleChange} placeholder="Ex: Rotação com milho safrinha, preparo mínimo do solo" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+          <div>
+            <label htmlFor="outrasRecomendacoes" className="block font-semibold text-gray-700 mb-1 text-lg">Outras Recomendações:</label>
+            <textarea id="outrasRecomendacoes" name="outrasRecomendacoes" rows="3" value={formData.outrasRecomendacoes} onChange={handleChange} placeholder="Ex: Calibração de máquinas, uso de EPIs" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
+          </div>
+
+          {/* Seção 7: Próximos Passos e Ações de Acompanhamento */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">7. Próximos Passos e Ações de Acompanhamento</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="dataProximaVisita" className="block font-semibold text-gray-700 mb-1 text-lg">Data Sugerida para Próxima Visita:</label>
+              <input type="date" id="dataProximaVisita" name="dataProximaVisita" value={formData.dataProximaVisita} onChange={handleChange} className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg" />
             </div>
             <div>
-              <label htmlFor="responsavelTecnico" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Responsável Técnico:</label>
-              <input
-                type="text"
-                id="responsavelTecnico"
-                name="responsavelTecnico"
-                value={formData.responsavelTecnico}
-                onChange={handleChange}
-                className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-              />
+              <label htmlFor="acoesVerificar" className="block font-semibold text-gray-700 mb-1 text-lg">Ações a Serem Verificadas na Próxima Visita:</label>
+              <textarea id="acoesVerificar" name="acoesVerificar" rows="2" value={formData.acoesVerificar} onChange={handleChange} placeholder="Ex: Eficácia da aplicação de fungicida, desenvolvimento da cultura" className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
             </div>
           </div>
 
-          <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center`}>Observações Técnicas</h3>
+          {/* Seção 8: Observações Adicionais/Comentários */}
+          <h3 className="text-lg font-semibold mt-4 mb-2">8. Observações Adicionais/Comentários</h3>
           <div>
-            <label htmlFor="estagioFenologico" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Estágio Fenológico Observado:</label>
-            <input
-              type="text"
-              id="estagioFenologico"
-              name="estagioFenologico"
-              value={formData.estagioFenologico}
-              onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="observacoesGerais" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Observações Gerais da Lavoura:</label>
-            <textarea
-              id="observacoesGerais"
-              name="observacoesGerais"
-              rows="3"
-              value={formData.observacoesGerais}
-              onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-            ></textarea>
-          </div>
-
-          <div>
-            <label htmlFor="problemasIdentificados" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Problemas Identificados (Pragas, Doenças, Daninhas, etc.):</label>
-            <textarea
-              id="problemasIdentificados"
-              name="problemasIdentificados"
-              rows="4"
-              value={formData.problemasIdentificados}
-              onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-            ></textarea>
-          </div>
-
-          <div>
-            <label htmlFor="orientacoesTecnicas" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Orientações Técnicas Fornecidas:</label>
-            <textarea
-              id="orientacoesTecnicas"
-              name="orientacoesTecnicas"
-              rows="4"
-              value={formData.orientacoesTecnicas}
-              onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-            ></textarea>
-          </div>
-
-          <div>
-            <label htmlFor="potencialProdutivo" className={`block font-semibold text-gray-700 mb-1 text-lg`}>Padrão de Qualidade e Potencial Produtivo Estimado:</label>
-            <textarea
-              id="potencialProdutivo"
-              name="potencialProdutivo"
-              rows="3"
-              value={formData.potencialProdutivo}
-              onChange={handleChange}
-              className={`mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg`}
-            ></textarea>
+            <textarea id="observacoesAdicionais" name="observacoesAdicionais" rows="4" value={formData.observacoesAdicionais} onChange={handleChange} placeholder="Qualquer outra informação relevante." className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-green-500 focus:border-green-500 text-lg"></textarea>
           </div>
 
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
@@ -1104,8 +1120,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
               <Camera className="w-5 h-5 mr-2" />
               Fotos do Relatório
             </h3>
-            {/* isPdfMode é false aqui, então os botões aparecem */}
-            <div className="print-hidden"> {/* Adicionado print-hidden */}
+            <div className="print-hidden">
               <input
                 type="file"
                 accept="image/*"
@@ -1115,7 +1130,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
               />
               <button
                 type="button"
-                onClick={() => fileInputRef.current.click()} // Alterado para acionar o clique do input de arquivo
+                onClick={() => fileInputRef.current.click()}
                 className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105 mb-4"
               >
                 <PlusCircle className="w-5 h-5 mr-2" />
@@ -1141,11 +1156,10 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
                       e.target.src = `https://placehold.co/150x150/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
                     }}
                   />
-                  {/* isPdfMode é false aqui, então o botão de remover aparece */}
                   <button
                     type="button"
                     onClick={() => handleRemovePhoto(index)}
-                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 print-hidden" // Adicionado print-hidden
+                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 print-hidden"
                     aria-label="Remover foto"
                   >
                     <XCircle className="w-4 h-4" />
@@ -1156,7 +1170,7 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center md:justify-end gap-4 mt-8 print-hidden"> {/* Adicionado print-hidden */}
+        <div className="flex flex-wrap justify-center md:justify-end gap-4 mt-8 print-hidden">
           <button
             type="button"
             onClick={onCancel}
@@ -1166,10 +1180,10 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
             Cancelar
           </button>
           <button
-            type="submit" // Alterado para type="submit" para salvar o formulário
+            type="submit"
             className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105"
           >
-            <Save className="w-5 h-5 mr-2" /> {/* Ícone Save adicionado */}
+            <Save className="w-5 h-5 mr-2" />
             Salvar Relatório
           </button>
           <button
@@ -1183,15 +1197,13 @@ const ReportForm = ({ report, onSave, onCancel, isEditing, onGeneratePdf, /* onS
           </button>
           <button
             type="button"
-            onClick={() => window.print()} // Direct call to print
+            onClick={() => window.print()}
             className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105"
           >
             <Printer className="w-5 h-5 mr-2" />
             Imprimir Relatório
           </button>
-          {/* Botão de Compartilhar removido */}
         </div>
-        {/* Exibição da mensagem de compartilhamento removida */}
       </form>
     </div>
   );
@@ -1203,91 +1215,86 @@ ReportForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   isEditing: PropTypes.bool.isRequired,
   onGeneratePdf: PropTypes.func.isRequired,
-  // onShareReport removido
-  // eslint-disable-next-line no-unused-vars
-  openPhotoModal: PropTypes.func.isRequired, // Adicionado comentário para ignorar o aviso do ESLint
+  openPhotoModal: PropTypes.func.isRequired,
   isPdfMode: PropTypes.bool.isRequired,
   loadingPdf: PropTypes.bool.isRequired,
   setLoadingPdf: PropTypes.func.isRequired,
   setIsPdfMode: PropTypes.func.isRequired, 
   setError: PropTypes.func.isRequired, 
-  // shareMessage removido
 };
 
-const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* eslint-disable-next-line no-unused-vars */ openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError /*, shareMessage */ }) => { // onShareReport e shareMessage removidos
-  const reportContentRef = useRef(null); // Não é mais usado para geração de PDF, mas é mantido para o layout da tela
-
+const ReportView = ({ report, onCancel, onGeneratePdf, openPhotoModal, isPdfMode, loadingPdf, setLoadingPdf, setIsPdfMode, setError }) => {
   const handleGeneratePdfClick = async () => {
-    setLoadingPdf(true); // Ativa o estado de carregamento do PDF
+    setLoadingPdf(true);
     await onGeneratePdf(report, null, setLoadingPdf, setIsPdfMode, setError);
   };
 
-  // handleShareClick removido
-  // const handleShareClick = () => {
-  //   onShareReport(report); // Chama a função de compartilhamento
-  // };
-
   return (
     <div className="p-6 bg-white rounded-2xl shadow-lg">
-      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center print-hidden"> {/* Adicionado print-hidden */}
+      <h2 className="text-2xl font-bold text-green-800 mb-6 flex items-center print-hidden">
         <Eye className="w-6 h-6 mr-2" />
         Detalhes do Relatório
       </h2>
-      <div ref={reportContentRef} className={`
+      <div className={`
           p-4 sm:p-6
           md:p-12 lg:px-28 lg:py-20
           border border-gray-200 rounded-xl bg-gray-50 mb-6 space-y-4
-          printable-report {/* Adicionada classe printable-report aqui */}
+          printable-report
         `}>
-        <h3 className={`text-xl font-bold text-green-700 mb-4 text-center`}>Informações da Visita</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Nome da Propriedade:</p>
-            <p className={`text-gray-900 font-semibold text-xl`}>{report.propriedade}</p>
-          </div>
-          <div>
-            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Nome da Lavoura:</p>
-            <p className={`text-gray-900 font-semibold text-xl`}>{report.lavoura}</p>
-          </div>
-          <div>
-            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Data da Visita:</p>
-            <p className={`text-gray-900 font-semibold text-xl`}>{new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
-          </div>
-          <div>
-            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Condições Climáticas:</p>
-            <p className={`text-gray-900 font-semibold text-xl`}>{report.condicoesClimaticas}</p>
-          </div>
-          <div>
-            <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Responsável Técnico:</p>
-            <p className={`text-gray-900 font-semibold text-xl`}>{report.responsavelTecnico}</p>
-          </div>
-        </div>
+        {/* Título Principal do Relatório */}
+        <h2 className="text-xl font-bold mb-4 text-center">Relatório de Acompanhamento de Lavouras</h2>
 
-        <h3 className={`text-xl font-bold text-green-700 mt-6 mb-4 text-center`}>Observações Técnicas</h3>
-        <div>
-          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Estágio Fenológico Observado:</p>
-          <p className={`text-gray-900 text-xl`}>{report.estagioFenologico}</p>
-        </div>
+        {/* Seção 1: Dados da Visita e do Técnico */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">1. Dados da Visita e do Técnico</h3>
+        <p><strong>Data da Visita:</strong> {new Date(report.dataVisita).toLocaleDateString('pt-BR')}</p>
+        <p><strong>Hora da Visita:</strong> {report.horaVisita}</p>
+        <p><strong>Nome do Técnico/Responsável:</strong> {report.nomeTecnico}</p>
 
-        <div>
-          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Observações Gerais da Lavoura:</p>
-          <p className={`text-gray-900 text-xl`}>{report.observacoesGerais}</p>
-        </div>
+        {/* Seção 2: Dados da Propriedade */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">2. Dados da Propriedade</h3>
+        <p><strong>Nome da Propriedade:</strong> {report.nomePropriedade}</p>
+        <p><strong>Contratante:</strong> {report.contratante}</p>
+        <p><strong>Localização:</strong> {report.localizacao}</p>
+        <p><strong>Cultura(s) Acompanhada(s):</strong> {report.cultura}</p>
+        <p><strong>Área Total da(s) Lavouras Visitada(s) (ha/alqueires):</strong> {report.areaTotal}</p>
 
-        <div>
-          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Problemas Identificados:</p>
-          <p className={`text-gray-900 text-xl`}>{report.problemasIdentificados}</p>
-        </div>
+        {/* Seção 3: Observações Gerais da Lavoura */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">3. Observações Gerais da Lavoura</h3>
+        <p><strong>Estágio Fenológico Atual:</strong> {report.estagioFenologico || 'N/A'}</p>
+        <p><strong>Condições Climáticas no Período:</strong> {report.condicoesClimaticas || 'N/A'}</p>
+        <p><strong>Observações Visuais:</strong> {report.observacoesVisuais || 'N/A'}</p>
 
-        <div>
-          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Orientações Técnicas Fornecidas:</p>
-          <p className={`text-gray-900 text-xl`}>{report.orientacoesTecnicas}</p>
-        </div>
+        {/* Seção 4: Avaliação da Qualidade da Lavoura */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">4. Avaliação da Qualidade da Lavoura</h3>
+        <p><strong>Pragas Identificadas (Nome, Nível de Infestação):</strong> {report.pragasIdentificadas || 'N/A'}</p>
+        <p><strong>Doenças Identificadas (Nome, Nível de Incidência):</strong> {report.doencasIdentificadas || 'N/A'}</p>
+        <p><strong>Déficits Nutricionais (Sintomas, Deficiência Suspeita):</strong> {report.deficitNutricionais || 'N/A'}</p>
+        <p><strong>Controle de Plantas Daninhas (Eficiência, Espécies Predominantes):</strong> {report.controleDandinha || 'N/A'}</p>
+        <p><strong>Aspectos Físicos do Solo:</strong> {report.aspectosSolo || 'N/A'}</p>
+        <p><strong>Outras Observações de Qualidade:</strong> {report.outrasQualidade || 'N/A'}</p>
 
-        <div>
-          <p className={`font-semibold text-gray-700 mb-1 text-lg`}>Padrão de Qualidade e Potencial Produtivo Estimado:</p>
-          <p className={`text-gray-900 text-xl`}>{report.potencialProdutivo}</p>
-        </div>
+        {/* Seção 5: Potencial Produtivo da Lavoura */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">5. Potencial Produtivo da Lavoura</h3>
+        <p><strong>Estimativa de Produção (Atual/Revisada):</strong> {report.estimativaProducao || 'N/A'}</p>
+        <p><strong>Fatores Limitantes Observados:</strong> {report.fatoresLimitantes || 'N/A'}</p>
+        <p><strong>Fatores Favoráveis Observados:</strong> {report.fatoresFavoraveis || 'N/A'}</p>
+
+        {/* Seção 6: Orientações Técnicas Fornecidas ao Corpo Gerencial */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">6. Orientações Técnicas Fornecidas ao Corpo Gerencial</h3>
+        <p><strong>Recomendações para Próximos Dias/Semana:</strong> {report.recomendacoesProximosDias || 'N/A'}</p>
+        <p><strong>Manejo Fitossanitário (Produto, Dose, Momento):</strong> {report.manejoFitossanitario || 'N/A'}</p>
+        <p><strong>Manejo Nutricional (Fertilizante, Dose, Momento):</strong> {report.manejoNutricional || 'N/A'}</p>
+        <p><strong>Manejo Cultural (Rotação, Preparo de Solo, etc.):</strong> {report.manejoCultural || 'N/A'}</p>
+        <p><strong>Outras Recomendações:</strong> {report.outrasRecomendacoes || 'N/A'}</p>
+
+        {/* Seção 7: Próximos Passos e Ações de Acompanhamento */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">7. Próximos Passos e Ações de Acompanhamento</h3>
+        <p><strong>Data Sugerida para Próxima Visita:</strong> {report.dataProximaVisita || 'N/A'}</p>
+        <p><strong>Ações a Serem Verificadas na Próxima Visita:</strong> {report.acoesVerificar || 'N/A'}</p>
+
+        {/* Seção 8: Observações Adicionais/Comentários */}
+        <h3 className="text-lg font-semibold mt-4 mb-2">8. Observações Adicionais/Comentários</h3>
+        <p>{report.observacoesAdicionais || 'N/A'}</p>
 
         {report.fotos && report.fotos.length > 0 && (
           <div className="border border-gray-200 p-4 rounded-xl bg-white shadow-sm mt-6">
@@ -1321,7 +1328,7 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
         )}
       </div>
 
-      <div className="flex flex-wrap justify-center md:justify-end gap-4 print-hidden"> {/* Adicionado print-hidden */}
+      <div className="flex flex-wrap justify-center md:justify-end gap-4 print-hidden">
         <button
           onClick={onCancel}
           className="flex flex-col sm:flex-row items-center justify-center sm:justify-start px-4 py-2 sm:px-6 sm:py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition duration-300 ease-in-out text-sm sm:text-base text-center"
@@ -1340,73 +1347,68 @@ const ReportView = ({ report, onCancel, onGeneratePdf, /* onShareReport, */ /* e
         </button>
         <button
           type="button"
-          onClick={() => window.print()} // Direct call to print
+          onClick={() => window.print()}
           className="flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105"
         >
           <Printer className="w-5 h-5 mr-2" />
           Imprimir Relatório
         </button>
-        {/* Botão de Compartilhar removido */}
       </div>
-      {/* Exibição da mensagem de compartilhamento removida */}
+    </div>
+  );
+};
+  
+// Prop Types for ReportView
+ReportView.propTypes = {
+  report: PropTypes.object.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onGeneratePdf: PropTypes.func.isRequired,
+  openPhotoModal: PropTypes.func.isRequired,
+  isPdfMode: PropTypes.bool.isRequired,
+  loadingPdf: PropTypes.bool.isRequired,
+  setLoadingPdf: PropTypes.func.isRequired,
+  setIsPdfMode: PropTypes.func.isRequired,
+  setError: PropTypes.func.isRequired,
+};
+  
+const PhotoModal = ({ imageUrl, onClose }) => {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+      onClick={onClose}
+    >
+      <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={imageUrl}
+          alt="Visualização da Foto"
+          className="max-w-full h-auto object-contain rounded-lg shadow-xl"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = `https://placehold.co/600x400/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
+          }}
+        />
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white bg-gray-800 bg-opacity-50 rounded-full p-2 hover:bg-gray-700 transition-colors duration-200"
+          aria-label="Fechar"
+        >
+          <XCircle className="w-8 h-8" />
+        </button>
       </div>
-    );
-  };
+    </div>
+  );
+};
   
-  // Prop Types for ReportView
-  ReportView.propTypes = {
-    report: PropTypes.object.isRequired,
-    onCancel: PropTypes.func.isRequired,
-    onGeneratePdf: PropTypes.func.isRequired,
-    // onShareReport removido
-    // eslint-disable-next-line no-unused-vars
-    openPhotoModal: PropTypes.func.isRequired, // Adicionado comentário para ignorar o aviso do ESLint
-    isPdfMode: PropTypes.bool.isRequired,
-    loadingPdf: PropTypes.bool.isRequired,
-    setLoadingPdf: PropTypes.func.isRequired,
-    setIsPdfMode: PropTypes.func.isRequired,
-    setError: PropTypes.func.isRequired,
-    // shareMessage removido
-  };
+PhotoModal.propTypes = {
+  imageUrl: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
   
-  const PhotoModal = ({ imageUrl, onClose }) => {
-    useEffect(() => {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = 'unset';
-      };
-    }, []);
-  
-    return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
-        onClick={onClose}
-      >
-        <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <img
-            src={imageUrl}
-            alt="Visualização da Foto"
-            className="max-w-full h-auto object-contain rounded-lg shadow-xl"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = `https://placehold.co/600x400/cccccc/333333?text=Erro+ao+Carregar+Imagem`;
-            }}
-          />
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-white bg-gray-800 bg-opacity-50 rounded-full p-2 hover:bg-gray-700 transition-colors duration-200"
-            aria-label="Fechar"
-          >
-            <XCircle className="w-8 h-8" />
-          </button>
-        </div>
-      </div>
-    );
-  };
-  
-  PhotoModal.propTypes = {
-    imageUrl: PropTypes.string.isRequired,
-    onClose: PropTypes.func.isRequired,
-  };
-  
-  export default App;
+export default App;
