@@ -1,0 +1,34 @@
+{
+  "extends": [
+    "react-app", // Se o seu projeto foi criado com Create React App
+    "plugin:react/recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2020, // Ou uma versão mais recente, como 2021, 2022, etc.
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "rules": {
+    // Você pode adicionar regras personalizadas aqui, se precisar.
+    // Por exemplo, para as variáveis globais do Canvas (como __app_id):
+    "no-undef": "off" // DESABILITA A VERIFICAÇÃO DE VARIÁVEIS NÃO DEFINIDAS.
+                      // Use com cautela, mas pode ser necessário para variáveis injetadas.
+  },
+  "settings": {
+    "react": {
+      "version": "detect" // Detecta automaticamente a versão do React que você está usando
+    }
+  },
+  "env": {
+    "browser": true, // Define que o código roda em ambiente de navegador (com window, document, etc.)
+    "node": false,
+    "es2020": true // Habilita recursos do ES2020
+  },
+  "globals": {
+    "__app_id": "readonly",
+    "__initial_auth_token": "readonly",
+    "__firebase_config": "readonly"
+  }
+}
